@@ -156,28 +156,28 @@
         .history-summary {
             background-color: #fafafa;
             border: 1px solid var(--border);
-            border-radius: 12px;
-            padding: 14px;
-            margin-bottom: 14px;
+            border-radius: 10px;
+            padding: 10px 12px;
+            margin-bottom: 10px;
             display: flex;
             justify-content: space-between;
             align-items: center;
         }
-        .history-summary .info-label { font-size: 0.8rem; color: var(--text-sub); margin-bottom: 3px; }
-        .history-summary .info-val { font-size: 1.05rem; font-weight: 700; color: var(--primary); }
+        .history-summary .info-label { font-size: 0.78rem; color: var(--text-sub); margin-bottom: 2px; }
+        .history-summary .info-val { font-size: 1rem; font-weight: 700; color: var(--primary); }
         
         /* 히스토리 백업 / 복원 툴바 */
         .history-tools {
             display: flex;
             gap: 6px;
-            margin-bottom: 16px;
+            margin-bottom: 10px;
             flex-wrap: wrap;
         }
         .btn-tool {
             flex: 1;
-            min-width: 80px;
-            padding: 8px 6px;
-            font-size: 0.76rem;
+            min-width: 76px;
+            padding: 6px 4px;
+            font-size: 0.74rem;
             font-weight: 500;
             color: #555;
             background: #fff;
@@ -199,16 +199,17 @@
         .history-list {
             display: flex;
             flex-direction: column;
-            gap: 12px;
-            max-height: 520px;
+            gap: 9px;
+            max-height: min(440px, 58vh);
             overflow-y: auto;
             padding-right: 2px;
+            -webkit-overflow-scrolling: touch;
         }
         .history-card {
             background: #ffffff;
             border: 1px solid var(--border);
-            border-radius: 12px;
-            padding: 14px;
+            border-radius: 10px;
+            padding: 11px 12px;
             box-shadow: 0 2px 6px rgba(0,0,0,0.03);
             transition: border-color 0.2s;
         }
@@ -217,19 +218,19 @@
             display: flex;
             justify-content: space-between;
             align-items: flex-start;
-            margin-bottom: 10px;
-            padding-bottom: 8px;
+            margin-bottom: 8px;
+            padding-bottom: 6px;
             border-bottom: 1px solid #f0f0f0;
         }
-        .card-title { font-size: 0.98rem; font-weight: 700; color: var(--primary); word-break: break-all; }
-        .card-date { font-size: 0.72rem; color: #999; margin-top: 2px; }
-        .card-tools { display: flex; gap: 6px; }
+        .card-title { font-size: 0.94rem; font-weight: 700; color: var(--primary); word-break: break-all; }
+        .card-date { font-size: 0.7rem; color: #999; margin-top: 2px; }
+        .card-tools { display: flex; gap: 4px; }
         .btn-icon {
             background: none;
             border: none;
             color: #999;
             cursor: pointer;
-            padding: 4px;
+            padding: 3px;
             border-radius: 4px;
             display: flex;
             align-items: center;
@@ -239,43 +240,43 @@
         .btn-icon.del:hover { color: var(--accent); background: #ffeaea; }
 
         .card-memo {
-            font-size: 0.8rem;
+            font-size: 0.78rem;
             color: #666;
             background: #f8f9fa;
-            padding: 6px 8px;
+            padding: 5px 8px;
             border-radius: 6px;
-            margin-bottom: 10px;
+            margin-bottom: 8px;
         }
 
         .card-body {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 8px;
-            font-size: 0.82rem;
-            margin-bottom: 12px;
+            gap: 6px;
+            font-size: 0.8rem;
+            margin-bottom: 9px;
         }
         .card-body .item { display: flex; justify-content: space-between; color: #555; }
         .card-body .item span:last-child { font-weight: 600; color: var(--primary); }
 
         .card-footer {
-            padding-top: 10px;
+            padding-top: 8px;
             border-top: 1px dashed var(--border);
             display: flex;
             justify-content: space-between;
             align-items: center;
         }
         .card-profit {
-            font-size: 1.05rem;
+            font-size: 1rem;
             font-weight: 700;
         }
         .card-margin {
-            font-size: 0.8rem;
+            font-size: 0.78rem;
             font-weight: 600;
-            margin-left: 6px;
+            margin-left: 5px;
         }
         .card-actions {
             display: flex;
-            gap: 6px;
+            gap: 5px;
         }
         .btn-card-action {
             padding: 5px 9px;
