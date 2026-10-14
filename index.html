@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KREAM 리셀 마진 계산기 (할인 적용)</title>
+    <style>
+        :root {
+            --primary: #222222;
+            --bg-color: #f4f4f4;
+            --card-bg: #ffffff;
+            --text-main: #333333;
+            --text-sub: #888888;
+            --border: #e0e0e0;
+            --accent: #ef6253;
+            --positive: #41b979;
+            --highlight: #f3f3f3;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif; }
+        body { background-color: var(--bg-color); display: flex; justify-content: center; align-items: center; min-height: 100vh; padding: 20px; }
+        .calculator { background: var(--card-bg); width: 100%; max-width: 420px; border-radius: 16px; box-shadow: 0 4px 20px rgba(0,0,0,0.05); padding: 30px 20px; }
+        .header { text-align: center; margin-bottom: 24px; }
+        .header h1 { font-size: 1.4rem; color: var(--primary); font-weight: 700; }
+        .section-title { font-size: 0.9rem; font-weight: 700; color: var(--primary); margin: 20px 0 10px; padding-bottom: 5px; border-bottom: 2px solid var(--primary); }
+        .input-group { margin-bottom: 16px; }
+        .input-group label { display: block; font-size: 0.85rem; color: var(--text-sub); margin-bottom: 6px; font-weight: 500; }
+        .input-group input { width: 100%; padding: 14px; font-size: 1rem; border: 1px solid var(--border); border-radius: 8px; outline: none; transition: border 0.2s; }
+        .input-group input:focus { border-color: var(--primary); }
+        .row { display: flex; gap: 12px; }
+        .row .input-group { flex: 1; }
+        .summary-box { background-color: var(--highlight); padding: 12px; border-radius: 8px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; }
+        .summary-box span { font-size: 0.9rem; color: var(--text-sub); }
+        .summary-box strong { font-size: 1.1rem; color: var(--primary); }
+        .result-box { margin-top: 24px; padding-top: 20px; border-top: 1px dashed var(--border); }
+        .result-item { display: flex; justify-content: space-between; margin-bottom: 12px; font-size: 0.95rem; color: var(--text-main); }
+        .result-item.total { margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--border); font-size: 1.2rem; font-weight: 700; color: var(--primary); }
+        .profit-positive { color: var(--positive) !important; }
+        .profit-negative { color: var(--accent) !important; }
+    </style>
+</head>
+<body>
+
+<div class="calculator">
+    <div class="header">
+        <h1>KREAM 리셀 마진 계산기</h1>
+    </div>
+
+    <div class="section-title">구매 정보 (아울렛)</div>
+    <div class="row">
+        <div class="input-group" style="flex: 2;">
+            <label>매장 표시 가격 (원)</label>
+            <input type="number" id="tagPrice" placeholder="예: 119000" inputmode="numeric" oninput="calculate()">
+        </div>
+        <div class="input-group" style="flex: 1;">
+            <label>추가 할인 (%)</label>
+            <input type="number" id="discountRate" placeholder="0" inputmode="decimal" oninput="calculate()">
+        </div>
+    </div>
+    
+    <div class="summary-box">
+        <span>최종 구매가</span>
+        <strong id="finalBuyPrice">0원</strong>
+    </div>
+
+    <div class="section-title">판매 정보 (크림)</div>
+    <div class="input-group">
+        <label>크림 판매 희망가 (원)</label>
+        <input type="number" id="sellPrice" placeholder="예: 175000" inputmode="numeric" oninput="calculate()">
+    </div>
+
+    <div class="row">
+        <div class="input-group">
+            <label>크림 수수료율 (%)</label>
+            <input type="number" id="feeRate" value="3.0" step="0.1" inputmode="decimal" oninput="calculate()">
+        </div>
+        <div class="input-group">
+            <label>발송 택배비 (원)</label>
+            <input type="number" id="shippingFee" value="4000" inputmode="numeric" oninput="calculate()">
+        </div>
+    </div>
+
+    <div class="result-box" id="resultBox">
+        <div class="result-item">
+            <span>크림 수수료 (예상)</span>
+            <span id="resFee">0원</span>
+        </div>
+        <div class="result-item">
+            <span>최종 정산 입금액</span>
+            <span id="resSettlement">0원</span>
+        </div>
+        <div class="result-item total">
+            <span>예상 순수익</span>
+            <span id="resProfit">0원</span>
+        </div>
+        <div class="result-item" style="justify-content: flex-end; font-size: 0.85rem; margin-top: 4px;">
+            <span id="resMarginRate" style="font-weight: 600;">수익률: 0%</span>
+        </div>
+    </div>
+</div>
+
+<script>
+    function calculate() {
+        // 1. 구매가 계산
+        const tagPrice = Number(document.getElementById('tagPrice').value) || 0;
+        const discountRate = Number(document.getElementById('discountRate').value) || 0;
+        
+        // 할인율 적용된 최종 구매가 (원단위 절사)
+        const buyPrice = Math.floor(tagPrice * (1 - (discountRate / 100)));
+        document.getElementById('finalBuyPrice').innerText = buyPrice.toLocaleString() + '원';
+
+        // 2. 판매가 및 기타 부대비용
+        const sellPrice = Number(document.getElementById('sellPrice').value) || 0;
+        const feeRate = Number(document.getElementById('feeRate').value) || 0;
+        const shippingFee = Number(document.getElementById('shippingFee').value) || 0;
+
+        const resultBox = document.getElementById('resultBox');
+        
+        // 입력값이 부족하면 결과창을 숨기거나 0으로 표시
+        if (buyPrice === 0 || sellPrice === 0) {
+            document.getElementById('resFee').innerText = '0원';
+            document.getElementById('resSettlement').innerText = '0원';
+            document.getElementById('resProfit').innerText = '0원';
+            document.getElementById('resMarginRate').innerText = '수익률: 0%';
+            document.getElementById('resProfit').className = 'result-item total';
+            document.getElementById('resMarginRate').className = '';
+            return;
+        }
+
+        // 수수료 계산 (소수점 이하 버림)
+        const feeAmount = Math.floor(sellPrice * (feeRate / 100));
+        
+        // 정산 금액 = 판매가 - 수수료
+        const settlement = sellPrice - feeAmount;
+
+        // 순수익 = 정산 금액 - 구매가 - 택배비
+        const netProfit = settlement - buyPrice - shippingFee;
+
+        // 수익률 = (순수익 / 투자금액) * 100
+        const totalInvestment = buyPrice + shippingFee;
+        let marginRate = 0;
+        if (totalInvestment > 0) {
+            marginRate = ((netProfit / totalInvestment) * 100).toFixed(1);
+        }
+
+        // 결과 화면 업데이트
+        document.getElementById('resFee').innerText = feeAmount.toLocaleString() + '원';
+        document.getElementById('resSettlement').innerText = settlement.toLocaleString() + '원';
+        
+        const elProfit = document.getElementById('resProfit');
+        elProfit.innerText = netProfit.toLocaleString() + '원';
+        
+        const elMarginRate = document.getElementById('resMarginRate');
+        elMarginRate.innerText = `수익률: ${marginRate}%`;
+
+        // 마이너스/플러스 색상 처리
+        elProfit.className = 'result-item total'; 
+        elMarginRate.className = '';
+        
+        if (netProfit > 0) {
+            elProfit.classList.add('profit-positive');
+            elMarginRate.classList.add('profit-positive');
+        } else if (netProfit < 0) {
+            elProfit.classList.add('profit-negative');
+            elMarginRate.classList.add('profit-negative');
+        }
+    }
+    
+    // 페이지 로드 시 초기 계산 1회 실행
+    window.onload = calculate;
+</script>
+
+</body>
+</html>
