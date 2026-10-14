@@ -222,7 +222,8 @@
             padding-bottom: 6px;
             border-bottom: 1px solid #f0f0f0;
         }
-        .card-title { font-size: 0.94rem; font-weight: 700; color: var(--primary); word-break: break-all; }
+        .card-title { font-size: 0.94rem; font-weight: 700; color: var(--primary); word-break: break-all; display: flex; align-items: center; flex-wrap: wrap; gap: 4px; }
+        .badge-qty { font-size: 0.72rem; color: #333; background: #eef0f2; border: 1px solid #dde1e5; border-radius: 4px; padding: 1px 5px; font-weight: 600; }
         .card-date { font-size: 0.7rem; color: #999; margin-top: 2px; }
         .card-tools { display: flex; gap: 4px; }
         .btn-icon {
@@ -580,9 +581,15 @@
         <div class="modal-summary-box" id="modalCalcSummary">
             <!-- 요약 내용 삽입 -->
         </div>
-        <div class="input-group">
-            <label>제품명 (필수)</label>
-            <input type="text" id="inputProductName" placeholder="예: 조던 1 로우 골프 울프그레이" autofocus>
+        <div class="row">
+            <div class="input-group" style="flex: 2.2;">
+                <label>제품명 (필수)</label>
+                <input type="text" id="inputProductName" placeholder="예: 조던 1 로우 골프" autofocus>
+            </div>
+            <div class="input-group" style="flex: 1;">
+                <label>수량 (개)</label>
+                <input type="number" id="inputProductQty" value="1" min="1" step="1" inputmode="numeric">
+            </div>
         </div>
         <div class="input-group" style="margin-bottom: 0;">
             <label>메모 (선택)</label>
@@ -600,9 +607,15 @@
     <div class="modal">
         <div class="modal-title">제품 정보 수정</div>
         <input type="hidden" id="editItemId">
-        <div class="input-group">
-            <label>제품명</label>
-            <input type="text" id="editProductName">
+        <div class="row">
+            <div class="input-group" style="flex: 2.2;">
+                <label>제품명</label>
+                <input type="text" id="editProductName">
+            </div>
+            <div class="input-group" style="flex: 1;">
+                <label>수량 (개)</label>
+                <input type="number" id="editProductQty" min="1" step="1" inputmode="numeric">
+            </div>
         </div>
         <div class="input-group" style="margin-bottom: 0;">
             <label>메모</label>
@@ -844,11 +857,12 @@
             <div><strong>최종 구매가:</strong> ${currentCalcData.buyPrice.toLocaleString()}원 (${currentCalcData.discountRate}% 할인)</div>
             <div><strong>크림 판매가:</strong> ${currentCalcData.sellPrice.toLocaleString()}원 (정산: ${currentCalcData.settlement.toLocaleString()}원)</div>
             <div style="margin-top: 4px; font-weight: 700; color: ${currentCalcData.netProfit >= 0 ? 'var(--positive)' : 'var(--accent)'};">
-                예상 순수익: ${(currentCalcData.netProfit > 0 ? '+' : '') + currentCalcData.netProfit.toLocaleString()}원 (${currentCalcData.marginRate}%)
+                예상 순수익 (개당): ${(currentCalcData.netProfit > 0 ? '+' : '') + currentCalcData.netProfit.toLocaleString()}원 (${currentCalcData.marginRate}%)
             </div>
         `;
         document.getElementById('modalCalcSummary').innerHTML = summaryHtml;
         document.getElementById('inputProductName').value = '';
+        document.getElementById('inputProductQty').value = '1';
         document.getElementById('inputProductMemo').value = '';
         
         const modal = document.getElementById('saveModal');
@@ -869,6 +883,7 @@
             return;
         }
 
+        const quantity = Math.max(1, parseInt(document.getElementById('inputProductQty').value) || 1);
         const memo = document.getElementById('inputProductMemo').value.trim();
         const now = new Date();
         const dateStr = `${now.getFullYear()}.${String(now.getMonth()+1).padStart(2,'0')}.${String(now.getDate()).padStart(2,'0')} ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
@@ -876,6 +891,7 @@
         const newItem = {
             id: Date.now(),
             name: productName,
+            quantity: quantity,
             memo: memo,
             date: dateStr,
             ...currentCalcData
@@ -920,20 +936,27 @@
         let html = '';
 
         list.forEach(item => {
-            totalProfit += (item.netProfit || 0);
+            const qty = item.quantity || 1;
+            const itemTotalProfit = (item.netProfit || 0) * qty;
+            totalProfit += itemTotalProfit;
+
             const isProfit = item.netProfit >= 0;
             const profitClass = isProfit ? 'profit-positive' : 'profit-negative';
             const profitSign = item.netProfit > 0 ? '+' : '';
+            const totalSign = itemTotalProfit > 0 ? '+' : '';
 
             html += `
                 <div class="history-card" data-id="${item.id}">
                     <div class="card-header">
                         <div>
-                            <div class="card-title">${escapeHtml(item.name)}</div>
+                            <div class="card-title">
+                                <span>${escapeHtml(item.name)}</span>
+                                ${qty > 1 ? `<span class="badge-qty">${qty}개</span>` : ''}
+                            </div>
                             <div class="card-date">${item.date}</div>
                         </div>
                         <div class="card-tools">
-                            <button type="button" class="btn-icon" onclick="openEditModal(${item.id})" title="제품명/메모 수정">
+                            <button type="button" class="btn-icon" onclick="openEditModal(${item.id})" title="제품명/수량/메모 수정">
                                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>
                             </button>
                             <button type="button" class="btn-icon del" onclick="deleteHistoryItem(${item.id})" title="삭제">
@@ -955,8 +978,14 @@
 
                     <div class="card-footer">
                         <div>
-                            <span class="card-profit ${profitClass}">${profitSign}${item.netProfit.toLocaleString()}원</span>
-                            <span class="card-margin ${profitClass}">(${item.marginRate}%)</span>
+                            ${qty > 1 ? `
+                                <span class="card-profit ${profitClass}">총 ${totalSign}${itemTotalProfit.toLocaleString()}원</span>
+                                <span class="card-margin ${profitClass}">(${item.marginRate}%)</span>
+                                <div style="font-size: 0.72rem; color: #888; margin-top: 1px;">개당 ${profitSign}${item.netProfit.toLocaleString()}원 × ${qty}개</div>
+                            ` : `
+                                <span class="card-profit ${profitClass}">${profitSign}${item.netProfit.toLocaleString()}원</span>
+                                <span class="card-margin ${profitClass}">(${item.marginRate}%)</span>
+                            `}
                         </div>
                         <div class="card-actions">
                             <button type="button" class="btn-card-action" onclick="captureHistoryItem(${item.id})" title="사진첩 저장용 이미지 생성">
@@ -1027,6 +1056,7 @@
 
         document.getElementById('editItemId').value = item.id;
         document.getElementById('editProductName').value = item.name;
+        document.getElementById('editProductQty').value = item.quantity || 1;
         document.getElementById('editProductMemo').value = item.memo || '';
         document.getElementById('editModal').classList.add('active');
     }
@@ -1042,12 +1072,14 @@
             alert('제품명을 입력해 주세요.');
             return;
         }
+        const newQty = Math.max(1, parseInt(document.getElementById('editProductQty').value) || 1);
         const newMemo = document.getElementById('editProductMemo').value.trim();
 
         const list = getHistoryList();
         const idx = list.findIndex(i => i.id === id);
         if (idx !== -1) {
             list[idx].name = newName;
+            list[idx].quantity = newQty;
             list[idx].memo = newMemo;
             saveHistoryList(list);
             renderHistory();
@@ -1123,11 +1155,14 @@
 
         // BOM (\uFEFF) 추가하여 엑셀에서 한글 깨짐 방지
         let csv = '\uFEFF';
-        csv += '제품명,메모,저장일시,매장표시가,할인율(%),최종구매가,크림판매가,수수료율(%),수수료,택배비,정산입금액,예상순수익,수익률(%)\n';
+        csv += '제품명,수량,메모,저장일시,매장표시가(개당),할인율(%),최종구매가(개당),크림판매가(개당),수수료율(%),수수료(개당),택배비(개당),정산입금액(개당),예상순수익(개당),총예상순수익,수익률(%)\n';
 
         list.forEach(i => {
+            const qty = i.quantity || 1;
+            const itemTotalProfit = (i.netProfit || 0) * qty;
             const row = [
                 `"${(i.name || '').replace(/"/g, '""')}"`,
+                qty,
                 `"${(i.memo || '').replace(/"/g, '""')}"`,
                 `"${i.date || ''}"`,
                 i.tagPrice || 0,
@@ -1139,6 +1174,7 @@
                 i.shippingFee || 0,
                 i.settlement || 0,
                 i.netProfit || 0,
+                itemTotalProfit,
                 `"${i.marginRate || 0}"`
             ];
             csv += row.join(',') + '\n';
@@ -1174,6 +1210,7 @@
 
         fillReceiptTemplate({
             name: productName,
+            quantity: 1,
             date: dateStr,
             ...currentCalcData
         });
@@ -1192,8 +1229,9 @@
     }
 
     function fillReceiptTemplate(data) {
+        const qty = data.quantity || 1;
         document.getElementById('receiptDate').innerText = data.date || '';
-        document.getElementById('receiptProduct').innerText = data.name || 'KREAM 상품';
+        document.getElementById('receiptProduct').innerText = (data.name || 'KREAM 상품') + (qty > 1 ? ` (수량: ${qty}개)` : '');
         document.getElementById('receiptTagPrice').innerText = (data.tagPrice ? data.tagPrice.toLocaleString() : '0') + '원';
         document.getElementById('receiptDiscountRate').innerText = (data.discountRate || 0) + '%';
         document.getElementById('receiptBuyPrice').innerText = (data.buyPrice ? data.buyPrice.toLocaleString() : '0') + '원';
@@ -1204,11 +1242,17 @@
         document.getElementById('receiptSettlement').innerText = (data.settlement ? data.settlement.toLocaleString() : '0') + '원';
         
         const profitEl = document.getElementById('receiptProfit');
-        const isProfit = (data.netProfit || 0) >= 0;
-        profitEl.innerText = (data.netProfit > 0 ? '+' : '') + (data.netProfit ? data.netProfit.toLocaleString() : '0') + '원';
+        const unitProfit = data.netProfit || 0;
+        const totalProfit = unitProfit * qty;
+        const isProfit = totalProfit >= 0;
+        profitEl.innerText = (totalProfit > 0 ? '+' : '') + totalProfit.toLocaleString() + '원';
         profitEl.style.color = isProfit ? 'var(--positive)' : 'var(--accent)';
 
-        document.getElementById('receiptMarginRate').innerText = `수익률: ${data.marginRate || 0}%`;
+        if (qty > 1) {
+            document.getElementById('receiptMarginRate').innerText = `수익률: ${data.marginRate || 0}% (개당 ${(unitProfit > 0 ? '+' : '') + unitProfit.toLocaleString()}원 × ${qty}개)`;
+        } else {
+            document.getElementById('receiptMarginRate').innerText = `수익률: ${data.marginRate || 0}%`;
+        }
     }
 
     function generateAndSaveReceiptImage(titleName) {
