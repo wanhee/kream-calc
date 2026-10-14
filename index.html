@@ -2,8 +2,12 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>KREAM 리셀 마진 계산기 (할인 적용)</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>KREAM 리셀 마진 계산기</title>
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="KREAM 마진계산기">
+    <meta name="theme-color" content="#222222">
     <style>
         :root {
             --primary: #222222;
@@ -21,9 +25,12 @@
         .calculator { background: var(--card-bg); width: 100%; max-width: 420px; border-radius: 16px; box-shadow: 0 4px 20px rgba(0,0,0,0.05); padding: 30px 20px; }
         .header { text-align: center; margin-bottom: 24px; }
         .header h1 { font-size: 1.4rem; color: var(--primary); font-weight: 700; }
-        .section-title { font-size: 0.9rem; font-weight: 700; color: var(--primary); margin: 20px 0 10px; padding-bottom: 5px; border-bottom: 2px solid var(--primary); }
+        .section-title { font-size: 0.9rem; font-weight: 700; color: var(--primary); margin: 20px 0 10px; padding-bottom: 5px; border-bottom: 2px solid var(--primary); display: flex; justify-content: space-between; align-items: center; }
+        .section-title .btn-reset { font-size: 0.75rem; font-weight: 400; color: var(--text-sub); background: none; border: 1px solid var(--border); border-radius: 4px; padding: 2px 6px; cursor: pointer; }
+        .section-title .btn-reset:hover { color: var(--primary); border-color: var(--primary); }
         .input-group { margin-bottom: 16px; }
         .input-group label { display: block; font-size: 0.85rem; color: var(--text-sub); margin-bottom: 6px; font-weight: 500; }
+        .input-group label .badge { font-size: 0.72rem; color: #666; background: #eee; border-radius: 4px; padding: 1px 5px; margin-left: 4px; font-weight: normal; }
         .input-group input { width: 100%; padding: 14px; font-size: 1rem; border: 1px solid var(--border); border-radius: 8px; outline: none; transition: border 0.2s; }
         .input-group input:focus { border-color: var(--primary); }
         .row { display: flex; gap: 12px; }
@@ -62,7 +69,10 @@
         <strong id="finalBuyPrice">0원</strong>
     </div>
 
-    <div class="section-title">판매 정보 (크림)</div>
+    <div class="section-title">
+        <span>판매 정보 (크림)</span>
+        <button type="button" class="btn-reset" onclick="resetSettings()" title="수수료/택배비 설정을 기본값으로 되돌립니다">기본값 복원</button>
+    </div>
     <div class="input-group">
         <label>크림 판매 희망가 (원)</label>
         <input type="number" id="sellPrice" placeholder="예: 175000" inputmode="numeric" oninput="calculate()">
@@ -70,12 +80,12 @@
 
     <div class="row">
         <div class="input-group">
-            <label>크림 수수료율 (%)</label>
-            <input type="number" id="feeRate" value="3.0" step="0.1" inputmode="decimal" oninput="calculate()">
+            <label>크림 수수료율 (%) <span class="badge" title="수정 시 자동 저장되어 다음 접속 시에도 유지됩니다">자동저장</span></label>
+            <input type="number" id="feeRate" value="5.0" step="0.1" inputmode="decimal" oninput="onFeeRateChange()">
         </div>
         <div class="input-group">
-            <label>발송 택배비 (원)</label>
-            <input type="number" id="shippingFee" value="4000" inputmode="numeric" oninput="calculate()">
+            <label>발송 택배비 (원) <span class="badge" title="수정 시 자동 저장되어 다음 접속 시에도 유지됩니다">자동저장</span></label>
+            <input type="number" id="shippingFee" value="4000" step="100" inputmode="numeric" oninput="onShippingFeeChange()">
         </div>
     </div>
 
@@ -99,6 +109,48 @@
 </div>
 
 <script>
+    const DEFAULT_FEE_RATE = 5.0;      // 크림 일반 판매 기준 기본 수수료율 (5.0%)
+    const DEFAULT_SHIPPING_FEE = 4000; // 일반 발송 택배비 기준 (4,000원)
+
+    const STORAGE_KEY_FEE = 'kream_fee_rate';
+    const STORAGE_KEY_SHIPPING = 'kream_shipping_fee';
+
+    // 로컬 스토리지에서 저장된 설정값 불러오기
+    function initSettings() {
+        const savedFee = localStorage.getItem(STORAGE_KEY_FEE);
+        const savedShipping = localStorage.getItem(STORAGE_KEY_SHIPPING);
+
+        document.getElementById('feeRate').value = (savedFee !== null && savedFee !== '') ? savedFee : DEFAULT_FEE_RATE;
+        document.getElementById('shippingFee').value = (savedShipping !== null && savedShipping !== '') ? savedShipping : DEFAULT_SHIPPING_FEE;
+    }
+
+    // 수수료율 변경 시 저장 및 계산
+    function onFeeRateChange() {
+        const val = document.getElementById('feeRate').value;
+        if (val !== '') {
+            localStorage.setItem(STORAGE_KEY_FEE, val);
+        }
+        calculate();
+    }
+
+    // 택배비 변경 시 저장 및 계산
+    function onShippingFeeChange() {
+        const val = document.getElementById('shippingFee').value;
+        if (val !== '') {
+            localStorage.setItem(STORAGE_KEY_SHIPPING, val);
+        }
+        calculate();
+    }
+
+    // 기본값 복원
+    function resetSettings() {
+        localStorage.removeItem(STORAGE_KEY_FEE);
+        localStorage.removeItem(STORAGE_KEY_SHIPPING);
+        document.getElementById('feeRate').value = DEFAULT_FEE_RATE;
+        document.getElementById('shippingFee').value = DEFAULT_SHIPPING_FEE;
+        calculate();
+    }
+
     function calculate() {
         // 1. 구매가 계산
         const tagPrice = Number(document.getElementById('tagPrice').value) || 0;
@@ -165,8 +217,11 @@
         }
     }
     
-    // 페이지 로드 시 초기 계산 1회 실행
-    window.onload = calculate;
+    // 페이지 로드 시 설정 불러오기 및 계산 실행
+    window.onload = function() {
+        initSettings();
+        calculate();
+    };
 </script>
 
 </body>
