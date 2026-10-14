@@ -221,6 +221,30 @@
             margin-bottom: 8px;
             padding-bottom: 6px;
             border-bottom: 1px solid #f0f0f0;
+            gap: 8px;
+        }
+        .card-main-row {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            flex: 1;
+            min-width: 0;
+        }
+        .card-thumb {
+            width: 48px;
+            height: 48px;
+            border-radius: 8px;
+            object-fit: cover;
+            border: 1px solid #e0e0e0;
+            flex-shrink: 0;
+            cursor: pointer;
+            background-color: #f7f7f7;
+            transition: transform 0.15s;
+        }
+        .card-thumb:active { transform: scale(0.96); }
+        .card-info-col {
+            flex: 1;
+            min-width: 0;
         }
         .card-title { font-size: 0.94rem; font-weight: 700; color: var(--primary); word-break: break-all; display: flex; align-items: center; flex-wrap: wrap; gap: 4px; }
         .badge-qty { font-size: 0.72rem; color: #333; background: #eef0f2; border: 1px solid #dde1e5; border-radius: 4px; padding: 1px 5px; font-weight: 600; }
@@ -334,10 +358,54 @@
             line-height: 1.5;
             color: #444;
         }
+        .photo-upload-group { margin-bottom: 12px; }
+        .photo-upload-group label { display: block; font-size: 0.82rem; color: var(--text-sub); margin-bottom: 4px; font-weight: 500; }
+        .photo-upload-box {
+            border: 1px dashed var(--border);
+            border-radius: 8px;
+            padding: 7px 10px;
+            background: #fafafa;
+            display: flex;
+            align-items: center;
+            min-height: 46px;
+        }
+        .photo-placeholder {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.8rem;
+            color: #666;
+            cursor: pointer;
+            width: 100%;
+        }
+        .photo-preview-wrap {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            width: 100%;
+        }
+        .photo-preview-img {
+            width: 40px;
+            height: 40px;
+            border-radius: 6px;
+            object-fit: cover;
+            border: 1px solid var(--border);
+            cursor: pointer;
+        }
+        .btn-photo-action {
+            font-size: 0.74rem;
+            padding: 4px 8px;
+            border: 1px solid var(--border);
+            background: #fff;
+            border-radius: 4px;
+            cursor: pointer;
+            color: var(--text-main);
+        }
+        .btn-photo-action.del { color: var(--accent); }
         .modal-buttons {
             display: flex;
             gap: 8px;
-            margin-top: 18px;
+            margin-top: 16px;
         }
         .modal-buttons button {
             flex: 1;
@@ -591,6 +659,21 @@
                 <input type="number" id="inputProductQty" value="1" min="1" step="1" inputmode="numeric">
             </div>
         </div>
+        <div class="photo-upload-group">
+            <label>제품 사진 (선택)</label>
+            <div class="photo-upload-box" id="savePhotoBox">
+                <input type="file" id="inputProductPhoto" accept="image/*" style="display:none;" onchange="handlePhotoSelect(event, 'save')">
+                <div class="photo-placeholder" id="savePhotoPlaceholder" onclick="document.getElementById('inputProductPhoto').click()">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path><circle cx="12" cy="13" r="4"></circle></svg>
+                    <span>사진 추가 (앨범/카메라)</span>
+                </div>
+                <div class="photo-preview-wrap" id="savePhotoPreviewWrap" style="display:none;">
+                    <img class="photo-preview-img" id="savePhotoImg" src="" alt="미리보기" onclick="previewImageEnlarged(this.src)">
+                    <button type="button" class="btn-photo-action" onclick="document.getElementById('inputProductPhoto').click()">변경</button>
+                    <button type="button" class="btn-photo-action del" onclick="removePhoto('save')">삭제</button>
+                </div>
+            </div>
+        </div>
         <div class="input-group" style="margin-bottom: 0;">
             <label>메모 (선택)</label>
             <input type="text" id="inputProductMemo" placeholder="예: 265 사이즈, 여주아울렛 구매">
@@ -617,6 +700,21 @@
                 <input type="number" id="editProductQty" min="1" step="1" inputmode="numeric">
             </div>
         </div>
+        <div class="photo-upload-group">
+            <label>제품 사진</label>
+            <div class="photo-upload-box" id="editPhotoBox">
+                <input type="file" id="editProductPhoto" accept="image/*" style="display:none;" onchange="handlePhotoSelect(event, 'edit')">
+                <div class="photo-placeholder" id="editPhotoPlaceholder" onclick="document.getElementById('editProductPhoto').click()">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path><circle cx="12" cy="13" r="4"></circle></svg>
+                    <span>사진 추가 / 변경</span>
+                </div>
+                <div class="photo-preview-wrap" id="editPhotoPreviewWrap" style="display:none;">
+                    <img class="photo-preview-img" id="editPhotoImg" src="" alt="미리보기" onclick="previewImageEnlarged(this.src)">
+                    <button type="button" class="btn-photo-action" onclick="document.getElementById('editProductPhoto').click()">변경</button>
+                    <button type="button" class="btn-photo-action del" onclick="removePhoto('edit')">삭제</button>
+                </div>
+            </div>
+        </div>
         <div class="input-group" style="margin-bottom: 0;">
             <label>메모</label>
             <input type="text" id="editProductMemo">
@@ -628,6 +726,14 @@
     </div>
 </div>
 
+<!-- ================= [사진 확대보기 모달] ================= -->
+<div class="modal-overlay" id="imagePreviewModal" onclick="closeImagePreview()" style="background: rgba(0,0,0,0.85); z-index: 3000;">
+    <div style="max-width: 92vw; max-height: 85vh; text-align: center; display: flex; flex-direction: column; align-items: center;" onclick="event.stopPropagation()">
+        <img id="enlargedImg" src="" style="max-width: 100%; max-height: 75vh; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); object-fit: contain;">
+        <button type="button" onclick="closeImagePreview()" style="margin-top: 14px; background: rgba(255,255,255,0.2); color: #fff; border: 1px solid rgba(255,255,255,0.4); border-radius: 20px; padding: 6px 16px; font-size: 0.85rem; cursor: pointer;">닫기</button>
+    </div>
+</div>
+
 <!-- ================= [사진첩 저장용 영수증 카드 템플릿] ================= -->
 <div id="receiptCaptureArea">
     <div class="receipt-header">
@@ -635,7 +741,10 @@
         <h3>리셀 마진 계산서</h3>
         <p id="receiptDate">2026.10.14 10:00</p>
     </div>
-    <div class="receipt-product" id="receiptProduct">제품명</div>
+    <div class="receipt-product" id="receiptProduct" style="display: flex; align-items: center; gap: 10px;">
+        <img id="receiptPhoto" src="" style="display: none; width: 44px; height: 44px; border-radius: 6px; object-fit: cover; border: 1px solid #ddd; flex-shrink: 0;">
+        <span id="receiptProductName" style="word-break: break-all;">제품명</span>
+    </div>
     <table class="receipt-table">
         <tr>
             <td style="color:#777;">매장 표시가</td>
@@ -822,31 +931,214 @@
         }
     }
 
-    // --- 3. 히스토리 로컬 스토리지 관리 ---
-    function getHistoryList() {
+    // --- 3. IndexedDB 비동기 데이터베이스 & 이미지 압축 ---
+    const DB_NAME = 'KreamCalcDB';
+    const DB_VERSION = 1;
+    const STORE_NAME = 'history';
+
+    let currentSavePhoto = null; // 저장 모달용 사진 DataURL
+    let currentEditPhoto = null; // 수정 모달용 사진 DataURL
+
+    function openDB() {
+        return new Promise((resolve, reject) => {
+            const req = indexedDB.open(DB_NAME, DB_VERSION);
+            req.onupgradeneeded = (e) => {
+                const db = e.target.result;
+                if (!db.objectStoreNames.contains(STORE_NAME)) {
+                    db.createObjectStore(STORE_NAME, { keyPath: 'id' });
+                }
+            };
+            req.onsuccess = (e) => resolve(e.target.result);
+            req.onerror = (e) => reject(e.target.error);
+        });
+    }
+
+    async function dbGetAllHistory() {
+        const db = await openDB();
+        return new Promise((resolve, reject) => {
+            const tx = db.transaction(STORE_NAME, 'readonly');
+            const store = tx.objectStore(STORE_NAME);
+            const req = store.getAll();
+            req.onsuccess = () => {
+                const list = req.result || [];
+                list.sort((a, b) => b.id - a.id); // 최신순 정렬
+                resolve(list);
+            };
+            req.onerror = () => reject(req.error);
+        });
+    }
+
+    async function dbSaveHistoryItem(item) {
+        const db = await openDB();
+        return new Promise((resolve, reject) => {
+            const tx = db.transaction(STORE_NAME, 'readwrite');
+            const store = tx.objectStore(STORE_NAME);
+            const req = store.put(item);
+            req.onsuccess = () => resolve();
+            req.onerror = () => reject(req.error);
+        });
+    }
+
+    async function dbDeleteHistoryItem(id) {
+        const db = await openDB();
+        return new Promise((resolve, reject) => {
+            const tx = db.transaction(STORE_NAME, 'readwrite');
+            const store = tx.objectStore(STORE_NAME);
+            const req = store.delete(id);
+            req.onsuccess = () => resolve();
+            req.onerror = () => reject(req.error);
+        });
+    }
+
+    async function dbClearAllHistory() {
+        const db = await openDB();
+        return new Promise((resolve, reject) => {
+            const tx = db.transaction(STORE_NAME, 'readwrite');
+            const store = tx.objectStore(STORE_NAME);
+            const req = store.clear();
+            req.onsuccess = () => resolve();
+            req.onerror = () => reject(req.error);
+        });
+    }
+
+    async function dbBulkSaveHistory(list) {
+        const db = await openDB();
+        return new Promise((resolve, reject) => {
+            const tx = db.transaction(STORE_NAME, 'readwrite');
+            const store = tx.objectStore(STORE_NAME);
+            list.forEach(item => store.put(item));
+            tx.oncomplete = () => resolve();
+            tx.onerror = () => reject(tx.error);
+        });
+    }
+
+    // 기존 localStorage 히스토리가 있으면 IndexedDB로 1회 자동 마이그레이션
+    async function migrateLocalStorageToIndexedDB() {
         try {
             const raw = localStorage.getItem(STORAGE_KEY_HISTORY);
-            return raw ? JSON.parse(raw) : [];
+            if (raw) {
+                const list = JSON.parse(raw);
+                if (Array.isArray(list) && list.length > 0) {
+                    await dbBulkSaveHistory(list);
+                }
+                localStorage.removeItem(STORAGE_KEY_HISTORY);
+            }
         } catch (e) {
-            console.error('Failed to parse history', e);
-            return [];
+            console.warn('Migration error', e);
         }
     }
 
-    function saveHistoryList(list) {
-        localStorage.setItem(STORAGE_KEY_HISTORY, JSON.stringify(list));
-        updateHistoryBadge();
+    async function updateHistoryBadge() {
+        try {
+            const list = await dbGetAllHistory();
+            const badge = document.getElementById('historyBadge');
+            if (list.length > 0) {
+                badge.innerText = list.length;
+                badge.style.display = 'inline-block';
+            } else {
+                badge.style.display = 'none';
+            }
+        } catch (e) {
+            console.error(e);
+        }
     }
 
-    function updateHistoryBadge() {
-        const list = getHistoryList();
-        const badge = document.getElementById('historyBadge');
-        if (list.length > 0) {
-            badge.innerText = list.length;
-            badge.style.display = 'inline-block';
-        } else {
-            badge.style.display = 'none';
+    // --- 이미지 압축 & 리사이징 (Canvas 기반 최적화, 30~50KB) ---
+    function compressImage(file, maxWidth = 480, quality = 0.75) {
+        return new Promise((resolve, reject) => {
+            if (!file || !file.type.startsWith('image/')) {
+                reject(new Error('이미지 파일만 선택할 수 있습니다.'));
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const img = new Image();
+                img.onload = () => {
+                    let width = img.width;
+                    let height = img.height;
+
+                    if (width > height) {
+                        if (width > maxWidth) {
+                            height = Math.round((height * maxWidth) / width);
+                            width = maxWidth;
+                        }
+                    } else {
+                        if (height > maxWidth) {
+                            width = Math.round((width * maxWidth) / height);
+                            height = maxWidth;
+                        }
+                    }
+
+                    const canvas = document.createElement('canvas');
+                    canvas.width = width;
+                    canvas.height = height;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0, width, height);
+
+                    const compressedDataUrl = canvas.toDataURL('image/jpeg', quality);
+                    resolve(compressedDataUrl);
+                };
+                img.onerror = () => reject(new Error('이미지를 읽을 수 없습니다.'));
+                img.src = e.target.result;
+            };
+            reader.onerror = () => reject(new Error('파일 읽기 오류'));
+            reader.readAsDataURL(file);
+        });
+    }
+
+    // 사진 선택 이벤트 핸들러
+    async function handlePhotoSelect(e, target) {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        showToast('사진 압축 및 최적화 중...');
+        try {
+            const compressed = await compressImage(file, 480, 0.75);
+            if (target === 'save') {
+                currentSavePhoto = compressed;
+                document.getElementById('savePhotoPlaceholder').style.display = 'none';
+                document.getElementById('savePhotoPreviewWrap').style.display = 'flex';
+                document.getElementById('savePhotoImg').src = compressed;
+            } else if (target === 'edit') {
+                currentEditPhoto = compressed;
+                document.getElementById('editPhotoPlaceholder').style.display = 'none';
+                document.getElementById('editPhotoPreviewWrap').style.display = 'flex';
+                document.getElementById('editPhotoImg').src = compressed;
+            }
+            showToast('사진이 첨부되었습니다.');
+        } catch (err) {
+            alert('사진 처리 중 오류가 발생했습니다: ' + err.message);
         }
+        e.target.value = '';
+    }
+
+    // 사진 제거
+    function removePhoto(target) {
+        if (target === 'save') {
+            currentSavePhoto = null;
+            document.getElementById('savePhotoPlaceholder').style.display = 'flex';
+            document.getElementById('savePhotoPreviewWrap').style.display = 'none';
+            document.getElementById('savePhotoImg').src = '';
+            document.getElementById('inputProductPhoto').value = '';
+        } else if (target === 'edit') {
+            currentEditPhoto = null;
+            document.getElementById('editPhotoPlaceholder').style.display = 'flex';
+            document.getElementById('editPhotoPreviewWrap').style.display = 'none';
+            document.getElementById('editPhotoImg').src = '';
+            document.getElementById('editProductPhoto').value = '';
+        }
+    }
+
+    // 사진 확대보기 모달
+    function previewImageEnlarged(src) {
+        if (!src) return;
+        document.getElementById('enlargedImg').src = src;
+        document.getElementById('imagePreviewModal').classList.add('active');
+    }
+
+    function closeImagePreview() {
+        document.getElementById('imagePreviewModal').classList.remove('active');
     }
 
     // --- 4. 히스토리 저장 모달 ---
@@ -865,6 +1157,9 @@
         document.getElementById('inputProductQty').value = '1';
         document.getElementById('inputProductMemo').value = '';
         
+        // 사진 첨부 영역 초기화
+        removePhoto('save');
+        
         const modal = document.getElementById('saveModal');
         modal.classList.add('active');
         setTimeout(() => document.getElementById('inputProductName').focus(), 100);
@@ -874,7 +1169,7 @@
         document.getElementById('saveModal').classList.remove('active');
     }
 
-    function confirmSaveHistory() {
+    async function confirmSaveHistory() {
         const nameInput = document.getElementById('inputProductName');
         const productName = nameInput.value.trim();
         if (!productName) {
@@ -892,22 +1187,22 @@
             id: Date.now(),
             name: productName,
             quantity: quantity,
+            photo: currentSavePhoto || null,
             memo: memo,
             date: dateStr,
             ...currentCalcData
         };
 
-        const list = getHistoryList();
-        list.unshift(newItem); // 최신순 추가
-        saveHistoryList(list);
+        await dbSaveHistoryItem(newItem);
+        await updateHistoryBadge();
 
         closeSaveModal();
         showToast('히스토리에 저장되었습니다.');
     }
 
     // --- 5. 히스토리 목록 렌더링 & 관리 ---
-    function renderHistory() {
-        const list = getHistoryList();
+    async function renderHistory() {
+        const list = await dbGetAllHistory();
         const container = document.getElementById('historyList');
         const countEl = document.getElementById('histCount');
         const totalProfitEl = document.getElementById('histTotalProfit');
@@ -948,15 +1243,20 @@
             html += `
                 <div class="history-card" data-id="${item.id}">
                     <div class="card-header">
-                        <div>
-                            <div class="card-title">
-                                <span>${escapeHtml(item.name)}</span>
-                                ${qty > 1 ? `<span class="badge-qty">${qty}개</span>` : ''}
+                        <div class="card-main-row">
+                            ${item.photo ? `
+                                <img class="card-thumb" src="${item.photo}" alt="제품 사진" onclick="previewImageEnlarged('${item.photo}')" title="클릭 시 크게 보기">
+                            ` : ''}
+                            <div class="card-info-col">
+                                <div class="card-title">
+                                    <span>${escapeHtml(item.name)}</span>
+                                    ${qty > 1 ? `<span class="badge-qty">${qty}개</span>` : ''}
+                                </div>
+                                <div class="card-date">${item.date}</div>
                             </div>
-                            <div class="card-date">${item.date}</div>
                         </div>
                         <div class="card-tools">
-                            <button type="button" class="btn-icon" onclick="openEditModal(${item.id})" title="제품명/수량/메모 수정">
+                            <button type="button" class="btn-icon" onclick="openEditModal(${item.id})" title="제품명/수량/사진/메모 수정">
                                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>
                             </button>
                             <button type="button" class="btn-icon del" onclick="deleteHistoryItem(${item.id})" title="삭제">
@@ -1011,28 +1311,28 @@
     }
 
     // 히스토리 개별 삭제
-    function deleteHistoryItem(id) {
+    async function deleteHistoryItem(id) {
         if (!confirm('이 히스토리 항목을 삭제하시겠습니까?')) return;
-        let list = getHistoryList();
-        list = list.filter(item => item.id !== id);
-        saveHistoryList(list);
-        renderHistory();
+        await dbDeleteHistoryItem(id);
+        await updateHistoryBadge();
+        await renderHistory();
         showToast('삭제되었습니다.');
     }
 
     // 히스토리 전체 삭제
-    function clearAllHistory() {
-        const list = getHistoryList();
+    async function clearAllHistory() {
+        const list = await dbGetAllHistory();
         if (list.length === 0) return;
         if (!confirm(`저장된 전체 히스토리 ${list.length}건을 모두 삭제하시겠습니까?\n삭제 후에는 복원할 수 없습니다.`)) return;
-        saveHistoryList([]);
-        renderHistory();
+        await dbClearAllHistory();
+        await updateHistoryBadge();
+        await renderHistory();
         showToast('전체 히스토리가 삭제되었습니다.');
     }
 
     // 계산기로 불러오기
-    function loadToCalculator(id) {
-        const list = getHistoryList();
+    async function loadToCalculator(id) {
+        const list = await dbGetAllHistory();
         const item = list.find(i => i.id === id);
         if (!item) return;
 
@@ -1049,8 +1349,8 @@
     }
 
     // --- 6. 히스토리 수정 모달 ---
-    function openEditModal(id) {
-        const list = getHistoryList();
+    async function openEditModal(id) {
+        const list = await dbGetAllHistory();
         const item = list.find(i => i.id === id);
         if (!item) return;
 
@@ -1058,6 +1358,17 @@
         document.getElementById('editProductName').value = item.name;
         document.getElementById('editProductQty').value = item.quantity || 1;
         document.getElementById('editProductMemo').value = item.memo || '';
+        
+        // 사진 세팅
+        if (item.photo) {
+            currentEditPhoto = item.photo;
+            document.getElementById('editPhotoPlaceholder').style.display = 'none';
+            document.getElementById('editPhotoPreviewWrap').style.display = 'flex';
+            document.getElementById('editPhotoImg').src = item.photo;
+        } else {
+            removePhoto('edit');
+        }
+
         document.getElementById('editModal').classList.add('active');
     }
 
@@ -1065,7 +1376,7 @@
         document.getElementById('editModal').classList.remove('active');
     }
 
-    function confirmEditHistory() {
+    async function confirmEditHistory() {
         const id = Number(document.getElementById('editItemId').value);
         const newName = document.getElementById('editProductName').value.trim();
         if (!newName) {
@@ -1075,14 +1386,16 @@
         const newQty = Math.max(1, parseInt(document.getElementById('editProductQty').value) || 1);
         const newMemo = document.getElementById('editProductMemo').value.trim();
 
-        const list = getHistoryList();
-        const idx = list.findIndex(i => i.id === id);
-        if (idx !== -1) {
-            list[idx].name = newName;
-            list[idx].quantity = newQty;
-            list[idx].memo = newMemo;
-            saveHistoryList(list);
-            renderHistory();
+        const list = await dbGetAllHistory();
+        const item = list.find(i => i.id === id);
+        if (item) {
+            item.name = newName;
+            item.quantity = newQty;
+            item.photo = currentEditPhoto || null;
+            item.memo = newMemo;
+
+            await dbSaveHistoryItem(item);
+            await renderHistory();
             closeEditModal();
             showToast('수정되었습니다.');
         }
@@ -1090,8 +1403,8 @@
 
     // --- 7. 파일 백업 / 복원 (JSON & CSV) ---
     // JSON 내보내기 (스마트폰 파일 앱 저장)
-    function exportHistoryJSON() {
-        const list = getHistoryList();
+    async function exportHistoryJSON() {
+        const list = await dbGetAllHistory();
         if (list.length === 0) {
             alert('백업할 히스토리 데이터가 없습니다.');
             return;
@@ -1112,50 +1425,46 @@
         if (!file) return;
 
         const reader = new FileReader();
-        reader.onload = function(evt) {
+        reader.onload = async function(evt) {
             try {
                 const imported = JSON.parse(evt.target.result);
                 if (!Array.isArray(imported)) {
                     throw new Error('유효한 백업 파일 형식이 아닙니다.');
                 }
 
-                const existing = getHistoryList();
+                const existing = await dbGetAllHistory();
                 const choice = confirm(`가져올 데이터: ${imported.length}건\n\n[확인] 기존 히스토리에 합치기 (중복 제외)\n[취소] 기존 히스토리를 모두 지우고 이 파일 내용으로 교체`);
                 
-                let merged;
                 if (choice) {
-                    // 합치기
                     const existingIds = new Set(existing.map(i => i.id));
                     const newItems = imported.filter(i => !existingIds.has(i.id));
-                    merged = [...newItems, ...existing];
+                    await dbBulkSaveHistory(newItems);
                 } else {
-                    // 덮어쓰기
-                    merged = imported;
+                    await dbClearAllHistory();
+                    await dbBulkSaveHistory(imported);
                 }
 
-                saveHistoryList(merged);
-                renderHistory();
-                showToast(`총 ${merged.length}건의 히스토리가 복원되었습니다.`);
+                await updateHistoryBadge();
+                await renderHistory();
+                showToast(`히스토리가 성공적으로 복원되었습니다.`);
             } catch (err) {
                 alert('파일 복원 중 오류가 발생했습니다: ' + err.message);
             }
-            // input 초기화
             e.target.value = '';
         };
         reader.readAsText(file);
     }
 
     // 엑셀용 CSV 내보내기
-    function exportHistoryCSV() {
-        const list = getHistoryList();
+    async function exportHistoryCSV() {
+        const list = await dbGetAllHistory();
         if (list.length === 0) {
             alert('내보낼 히스토리 데이터가 없습니다.');
             return;
         }
 
-        // BOM (\uFEFF) 추가하여 엑셀에서 한글 깨짐 방지
         let csv = '\uFEFF';
-        csv += '제품명,수량,메모,저장일시,매장표시가(개당),할인율(%),최종구매가(개당),크림판매가(개당),수수료율(%),수수료(개당),택배비(개당),정산입금액(개당),예상순수익(개당),총예상순수익,수익률(%)\n';
+        csv += '제품명,수량,사진첨부,메모,저장일시,매장표시가(개당),할인율(%),최종구매가(개당),크림판매가(개당),수수료율(%),수수료(개당),택배비(개당),정산입금액(개당),예상순수익(개당),총예상순수익,수익률(%)\n';
 
         list.forEach(i => {
             const qty = i.quantity || 1;
@@ -1163,6 +1472,7 @@
             const row = [
                 `"${(i.name || '').replace(/"/g, '""')}"`,
                 qty,
+                i.photo ? 'Y' : 'N',
                 `"${(i.memo || '').replace(/"/g, '""')}"`,
                 `"${i.date || ''}"`,
                 i.tagPrice || 0,
@@ -1199,7 +1509,6 @@
     }
 
     // --- 8. 사진첩 저장 기능 (Web Share API & 이미지 캡처) ---
-    // 현재 계산기 화면 영수증 캡처
     function captureCurrentResult() {
         if (!currentCalcData) return;
         
@@ -1211,6 +1520,7 @@
         fillReceiptTemplate({
             name: productName,
             quantity: 1,
+            photo: null,
             date: dateStr,
             ...currentCalcData
         });
@@ -1218,9 +1528,8 @@
         generateAndSaveReceiptImage(productName);
     }
 
-    // 히스토리 항목 영수증 캡처
-    function captureHistoryItem(id) {
-        const list = getHistoryList();
+    async function captureHistoryItem(id) {
+        const list = await dbGetAllHistory();
         const item = list.find(i => i.id === id);
         if (!item) return;
 
@@ -1231,7 +1540,16 @@
     function fillReceiptTemplate(data) {
         const qty = data.quantity || 1;
         document.getElementById('receiptDate').innerText = data.date || '';
-        document.getElementById('receiptProduct').innerText = (data.name || 'KREAM 상품') + (qty > 1 ? ` (수량: ${qty}개)` : '');
+        document.getElementById('receiptProductName').innerText = (data.name || 'KREAM 상품') + (qty > 1 ? ` (수량: ${qty}개)` : '');
+        
+        const receiptPhotoEl = document.getElementById('receiptPhoto');
+        if (data.photo) {
+            receiptPhotoEl.src = data.photo;
+            receiptPhotoEl.style.display = 'block';
+        } else {
+            receiptPhotoEl.style.display = 'none';
+        }
+
         document.getElementById('receiptTagPrice').innerText = (data.tagPrice ? data.tagPrice.toLocaleString() : '0') + '원';
         document.getElementById('receiptDiscountRate').innerText = (data.discountRate || 0) + '%';
         document.getElementById('receiptBuyPrice').innerText = (data.buyPrice ? data.buyPrice.toLocaleString() : '0') + '원';
@@ -1260,7 +1578,7 @@
         const target = document.getElementById('receiptCaptureArea');
 
         html2canvas(target, {
-            scale: 2, // 고해상도 (레티나 디스플레이 대응)
+            scale: 2,
             backgroundColor: '#ffffff',
             useCORS: true
         }).then(canvas => {
@@ -1273,7 +1591,6 @@
                 const filename = `kream_${Date.now()}.png`;
                 const file = new File([blob], filename, { type: 'image/png' });
 
-                // iOS/Android 등 모바일 Web Share API 지원 시 (사진첩 저장 / 공유)
                 if (navigator.canShare && navigator.canShare({ files: [file] })) {
                     try {
                         await navigator.share({
@@ -1283,13 +1600,11 @@
                         });
                         showToast('공유/사진첩 저장이 완료되었습니다.');
                     } catch (err) {
-                        // 사용자가 창을 닫았거나 취소한 경우
                         if (err.name !== 'AbortError') {
                             downloadBlobFile(blob, filename);
                         }
                     }
                 } else {
-                    // 데스크톱 또는 미지원 브라우저는 이미지 파일 다운로드
                     downloadBlobFile(blob, filename);
                     showToast('영수증 이미지가 다운로드되었습니다.');
                 }
@@ -1313,10 +1628,11 @@
     }
 
     // 초기 실행
-    window.onload = function() {
+    window.onload = async function() {
+        await migrateLocalStorageToIndexedDB();
         initSettings();
         calculate();
-        updateHistoryBadge();
+        await updateHistoryBadge();
     };
 </script>
 
