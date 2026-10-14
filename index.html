@@ -6,8 +6,10 @@
     <title>KREAM 리셀 마진 계산기</title>
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
-    <meta name="apple-mobile-web-app-title" content="KREAM 마진계산기">
+    <meta name="apple-mobile-web-app-title" content="KREAM 계산기">
     <meta name="theme-color" content="#222222">
+    <!-- html2canvas for image generation (saving to photo library) -->
+    <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
     <style>
         :root {
             --primary: #222222;
@@ -19,16 +21,19 @@
             --accent: #ef6253;
             --positive: #41b979;
             --highlight: #f3f3f3;
+            --btn-gray: #f0f0f0;
         }
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif; }
-        body { background-color: var(--bg-color); display: flex; justify-content: center; align-items: center; min-height: 100vh; padding: 20px; }
-        .calculator { position: relative; background: var(--card-bg); width: 100%; max-width: 420px; border-radius: 16px; box-shadow: 0 4px 20px rgba(0,0,0,0.05); padding: 30px 20px; }
-        .header { text-align: center; margin-bottom: 24px; }
-        .header h1 { font-size: 1.4rem; color: var(--primary); font-weight: 700; }
+        body { background-color: var(--bg-color); display: flex; justify-content: center; align-items: flex-start; min-height: 100vh; padding: 20px 14px; }
+        .calculator { position: relative; background: var(--card-bg); width: 100%; max-width: 440px; border-radius: 18px; box-shadow: 0 4px 20px rgba(0,0,0,0.06); padding: 26px 18px; margin: auto; }
+        
+        /* 헤더 & 새로고침 */
+        .header { text-align: center; margin-bottom: 18px; }
+        .header h1 { font-size: 1.35rem; color: var(--primary); font-weight: 700; letter-spacing: -0.3px; }
         .btn-reload {
             position: absolute;
             top: 18px;
-            right: 18px;
+            right: 16px;
             background: none;
             border: none;
             color: #b0b0b0;
@@ -45,28 +50,376 @@
             color: var(--primary);
             background-color: var(--highlight);
         }
-        .section-title { font-size: 0.9rem; font-weight: 700; color: var(--primary); margin: 20px 0 10px; padding-bottom: 5px; border-bottom: 2px solid var(--primary); display: flex; justify-content: space-between; align-items: center; }
+
+        /* 탭 네비게이션 */
+        .tab-nav {
+            display: flex;
+            background-color: #f1f1f1;
+            border-radius: 10px;
+            padding: 3px;
+            margin-bottom: 20px;
+        }
+        .tab-btn {
+            flex: 1;
+            padding: 10px 0;
+            font-size: 0.9rem;
+            font-weight: 600;
+            border: none;
+            background: none;
+            color: var(--text-sub);
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .tab-btn.active {
+            background-color: var(--card-bg);
+            color: var(--primary);
+            box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+        }
+        .tab-badge {
+            background-color: var(--primary);
+            color: #fff;
+            font-size: 0.72rem;
+            padding: 1px 6px;
+            border-radius: 10px;
+            font-weight: 600;
+        }
+        .tab-pane { display: none; }
+        .tab-pane.active { display: block; }
+
+        /* 입력 폼 */
+        .section-title { font-size: 0.88rem; font-weight: 700; color: var(--primary); margin: 18px 0 10px; padding-bottom: 5px; border-bottom: 2px solid var(--primary); display: flex; justify-content: space-between; align-items: center; }
         .section-title .btn-reset { font-size: 0.75rem; font-weight: 400; color: var(--text-sub); background: none; border: 1px solid var(--border); border-radius: 4px; padding: 2px 6px; cursor: pointer; }
         .section-title .btn-reset:hover { color: var(--primary); border-color: var(--primary); }
-        .input-group { margin-bottom: 16px; }
-        .input-group label { display: block; font-size: 0.85rem; color: var(--text-sub); margin-bottom: 6px; font-weight: 500; }
-        .input-group input { width: 100%; padding: 14px; font-size: 1rem; border: 1px solid var(--border); border-radius: 8px; outline: none; transition: border 0.2s; }
+        .input-group { margin-bottom: 14px; }
+        .input-group label { display: block; font-size: 0.82rem; color: var(--text-sub); margin-bottom: 6px; font-weight: 500; }
+        .input-group input { width: 100%; padding: 13px; font-size: 0.98rem; border: 1px solid var(--border); border-radius: 8px; outline: none; transition: border 0.2s; }
         .input-group input:focus { border-color: var(--primary); }
-        .row { display: flex; gap: 12px; }
+        .row { display: flex; gap: 10px; }
         .row .input-group { flex: 1; min-width: 0; }
-        .summary-box { background-color: var(--highlight); padding: 12px; border-radius: 8px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; }
-        .summary-box span { font-size: 0.9rem; color: var(--text-sub); }
-        .summary-box strong { font-size: 1.1rem; color: var(--primary); }
-        .result-box { margin-top: 24px; padding-top: 20px; border-top: 1px dashed var(--border); }
-        .result-item { display: flex; justify-content: space-between; margin-bottom: 12px; font-size: 0.95rem; color: var(--text-main); }
-        .result-item.total { margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--border); font-size: 1.2rem; font-weight: 700; color: var(--primary); }
+        
+        .summary-box { background-color: var(--highlight); padding: 12px; border-radius: 8px; margin-bottom: 18px; display: flex; justify-content: space-between; align-items: center; }
+        .summary-box span { font-size: 0.88rem; color: var(--text-sub); }
+        .summary-box strong { font-size: 1.05rem; color: var(--primary); }
+        
+        /* 결과 박스 */
+        .result-box { margin-top: 20px; padding-top: 18px; border-top: 1px dashed var(--border); }
+        .result-item { display: flex; justify-content: space-between; margin-bottom: 10px; font-size: 0.92rem; color: var(--text-main); }
+        .result-item.total { margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--border); font-size: 1.15rem; font-weight: 700; color: var(--primary); }
         .profit-positive { color: var(--positive) !important; }
         .profit-negative { color: var(--accent) !important; }
+
+        /* 결과 액션 버튼군 */
+        .result-actions {
+            margin-top: 18px;
+            display: flex;
+            gap: 8px;
+        }
+        .btn-action {
+            flex: 1;
+            padding: 13px 10px;
+            border-radius: 10px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            border: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            transition: background 0.2s, opacity 0.2s;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .btn-primary { background-color: var(--primary); color: #fff; }
+        .btn-primary:active { opacity: 0.85; }
+        .btn-secondary { background-color: #f1f2f4; color: var(--text-main); border: 1px solid #e0e0e0; }
+        .btn-secondary:active { background-color: #e5e6e8; }
+        .btn-action:disabled { opacity: 0.4; cursor: not-allowed; }
+
+        /* 히스토리 상단 요약 */
+        .history-summary {
+            background-color: #fafafa;
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 14px;
+            margin-bottom: 14px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .history-summary .info-label { font-size: 0.8rem; color: var(--text-sub); margin-bottom: 3px; }
+        .history-summary .info-val { font-size: 1.05rem; font-weight: 700; color: var(--primary); }
+        
+        /* 히스토리 백업 / 복원 툴바 */
+        .history-tools {
+            display: flex;
+            gap: 6px;
+            margin-bottom: 16px;
+            flex-wrap: wrap;
+        }
+        .btn-tool {
+            flex: 1;
+            min-width: 80px;
+            padding: 8px 6px;
+            font-size: 0.76rem;
+            font-weight: 500;
+            color: #555;
+            background: #fff;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            cursor: pointer;
+            text-align: center;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+            transition: all 0.15s;
+        }
+        .btn-tool:hover { background-color: #f7f7f7; color: var(--primary); }
+        .btn-tool.danger { color: #d9534f; }
+        .btn-tool.danger:hover { background-color: #fff2f2; border-color: #d9534f; }
+
+        /* 히스토리 카드 목록 */
+        .history-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            max-height: 520px;
+            overflow-y: auto;
+            padding-right: 2px;
+        }
+        .history-card {
+            background: #ffffff;
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 14px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.03);
+            transition: border-color 0.2s;
+        }
+        .history-card:hover { border-color: #bbb; }
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 10px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid #f0f0f0;
+        }
+        .card-title { font-size: 0.98rem; font-weight: 700; color: var(--primary); word-break: break-all; }
+        .card-date { font-size: 0.72rem; color: #999; margin-top: 2px; }
+        .card-tools { display: flex; gap: 6px; }
+        .btn-icon {
+            background: none;
+            border: none;
+            color: #999;
+            cursor: pointer;
+            padding: 4px;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .btn-icon:hover { color: var(--primary); background: #f0f0f0; }
+        .btn-icon.del:hover { color: var(--accent); background: #ffeaea; }
+
+        .card-memo {
+            font-size: 0.8rem;
+            color: #666;
+            background: #f8f9fa;
+            padding: 6px 8px;
+            border-radius: 6px;
+            margin-bottom: 10px;
+        }
+
+        .card-body {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            font-size: 0.82rem;
+            margin-bottom: 12px;
+        }
+        .card-body .item { display: flex; justify-content: space-between; color: #555; }
+        .card-body .item span:last-child { font-weight: 600; color: var(--primary); }
+
+        .card-footer {
+            padding-top: 10px;
+            border-top: 1px dashed var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .card-profit {
+            font-size: 1.05rem;
+            font-weight: 700;
+        }
+        .card-margin {
+            font-size: 0.8rem;
+            font-weight: 600;
+            margin-left: 6px;
+        }
+        .card-actions {
+            display: flex;
+            gap: 6px;
+        }
+        .btn-card-action {
+            padding: 5px 9px;
+            font-size: 0.75rem;
+            font-weight: 500;
+            border-radius: 6px;
+            border: 1px solid var(--border);
+            background: #fff;
+            color: var(--text-main);
+            cursor: pointer;
+        }
+        .btn-card-action:hover { background: #f5f5f5; }
+
+        .history-empty {
+            text-align: center;
+            padding: 40px 10px;
+            color: #999;
+            font-size: 0.9rem;
+            line-height: 1.5;
+        }
+
+        /* 모달 팝업 */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .modal-overlay.active { display: flex; }
+        .modal {
+            background: #fff;
+            border-radius: 16px;
+            width: 100%;
+            max-width: 380px;
+            padding: 22px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+            animation: modalFadeIn 0.2s ease-out;
+        }
+        @keyframes modalFadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .modal-title { font-size: 1.1rem; font-weight: 700; color: var(--primary); margin-bottom: 14px; }
+        .modal-summary-box {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 10px 12px;
+            margin-bottom: 14px;
+            font-size: 0.85rem;
+            line-height: 1.5;
+            color: #444;
+        }
+        .modal-buttons {
+            display: flex;
+            gap: 8px;
+            margin-top: 18px;
+        }
+        .modal-buttons button {
+            flex: 1;
+            padding: 12px;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            border: none;
+            cursor: pointer;
+        }
+
+        /* 캡처용 영수증 카드 (오프스크린 렌더링용) */
+        #receiptCaptureArea {
+            position: fixed;
+            left: -9999px;
+            top: 0;
+            width: 360px;
+            background: #ffffff;
+            padding: 24px 20px;
+            border-radius: 16px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+            font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", sans-serif;
+            color: #222;
+        }
+        .receipt-header {
+            text-align: center;
+            border-bottom: 2px dashed #ddd;
+            padding-bottom: 14px;
+            margin-bottom: 16px;
+        }
+        .receipt-header .tag {
+            display: inline-block;
+            background: #222;
+            color: #fff;
+            font-size: 0.72rem;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-weight: 700;
+            margin-bottom: 6px;
+        }
+        .receipt-header h3 { font-size: 1.25rem; font-weight: 800; }
+        .receipt-header p { font-size: 0.75rem; color: #888; margin-top: 4px; }
+        .receipt-product {
+            font-size: 1.05rem;
+            font-weight: 700;
+            color: #111;
+            margin-bottom: 14px;
+            padding: 8px 10px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            word-break: break-all;
+        }
+        .receipt-table { width: 100%; border-collapse: collapse; margin-bottom: 14px; font-size: 0.88rem; }
+        .receipt-table td { padding: 6px 0; }
+        .receipt-table td:last-child { text-align: right; font-weight: 600; }
+        .receipt-total {
+            border-top: 2px solid #222;
+            padding-top: 12px;
+            margin-top: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .receipt-total span:first-child { font-size: 1rem; font-weight: 700; }
+        .receipt-total .profit-val { font-size: 1.3rem; font-weight: 800; }
+
+        /* 토스트 알림 */
+        .toast {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%) translateY(50px);
+            background: rgba(34,34,34,0.92);
+            color: #fff;
+            padding: 10px 18px;
+            border-radius: 30px;
+            font-size: 0.86rem;
+            font-weight: 500;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            opacity: 0;
+            transition: all 0.25s ease;
+            z-index: 2000;
+            white-space: nowrap;
+            pointer-events: none;
+        }
+        .toast.show {
+            transform: translateX(-50%) translateY(0);
+            opacity: 1;
+        }
     </style>
 </head>
 <body>
 
 <div class="calculator">
+    <!-- 새로고침 버튼 (우측 상단 은은하게 배치) -->
     <button type="button" class="btn-reload" onclick="location.reload()" title="페이지 새로고침" aria-label="페이지 새로고침">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2"/>
@@ -77,61 +430,229 @@
         <h1>KREAM 리셀 마진 계산기</h1>
     </div>
 
-    <div class="section-title">구매 정보 (아울렛)</div>
-    <div class="row">
-        <div class="input-group" style="flex: 2;">
-            <label>매장 표시 가격 (원)</label>
-            <input type="number" id="tagPrice" placeholder="예: 119000" inputmode="numeric" oninput="calculate()">
-        </div>
-        <div class="input-group" style="flex: 1;">
-            <label>추가 할인 (%)</label>
-            <input type="number" id="discountRate" placeholder="0" inputmode="decimal" oninput="calculate()">
-        </div>
-    </div>
-    
-    <div class="summary-box">
-        <span>최종 구매가</span>
-        <strong id="finalBuyPrice">0원</strong>
+    <!-- 탭 네비게이션 -->
+    <div class="tab-nav">
+        <button type="button" class="tab-btn active" id="tabBtnCalc" onclick="switchTab('calc')">
+            <span>계산기</span>
+        </button>
+        <button type="button" class="tab-btn" id="tabBtnHistory" onclick="switchTab('history')">
+            <span>히스토리</span>
+            <span class="tab-badge" id="historyBadge" style="display:none;">0</span>
+        </button>
     </div>
 
-    <div class="section-title">
-        <span>판매 정보 (크림)</span>
-        <button type="button" class="btn-reset" onclick="resetSettings()" title="수수료/택배비 설정을 기본값으로 되돌립니다">기본값 복원</button>
-    </div>
-    <div class="input-group">
-        <label>크림 판매 희망가 (원)</label>
-        <input type="number" id="sellPrice" placeholder="예: 175000" inputmode="numeric" oninput="calculate()">
-    </div>
+    <!-- ================= [1. 계산기 탭] ================= -->
+    <div class="tab-pane active" id="tabPaneCalc">
+        <div class="section-title">구매 정보 (아울렛)</div>
+        <div class="row">
+            <div class="input-group" style="flex: 2;">
+                <label>매장 표시 가격 (원)</label>
+                <input type="number" id="tagPrice" placeholder="예: 119000" inputmode="numeric" oninput="calculate()">
+            </div>
+            <div class="input-group" style="flex: 1;">
+                <label>추가 할인 (%)</label>
+                <input type="number" id="discountRate" placeholder="0" inputmode="decimal" oninput="calculate()">
+            </div>
+        </div>
+        
+        <div class="summary-box">
+            <span>최종 구매가</span>
+            <strong id="finalBuyPrice">0원</strong>
+        </div>
 
-    <div class="row">
+        <div class="section-title">
+            <span>판매 정보 (크림)</span>
+            <button type="button" class="btn-reset" onclick="resetSettings()" title="수수료/택배비 설정을 기본값으로 되돌립니다">기본값 복원</button>
+        </div>
         <div class="input-group">
-            <label>크림 수수료율 (%)</label>
-            <input type="number" id="feeRate" value="5.0" step="0.1" inputmode="decimal" oninput="onFeeRateChange()">
+            <label>크림 판매 희망가 (원)</label>
+            <input type="number" id="sellPrice" placeholder="예: 175000" inputmode="numeric" oninput="calculate()">
         </div>
-        <div class="input-group">
-            <label>발송 택배비 (원)</label>
-            <input type="number" id="shippingFee" value="4000" step="100" inputmode="numeric" oninput="onShippingFeeChange()">
+
+        <div class="row">
+            <div class="input-group">
+                <label>크림 수수료율 (%)</label>
+                <input type="number" id="feeRate" value="5.0" step="0.1" inputmode="decimal" oninput="onFeeRateChange()">
+            </div>
+            <div class="input-group">
+                <label>발송 택배비 (원)</label>
+                <input type="number" id="shippingFee" value="4000" step="100" inputmode="numeric" oninput="onShippingFeeChange()">
+            </div>
+        </div>
+
+        <div class="result-box" id="resultBox">
+            <div class="result-item">
+                <span>크림 수수료 (예상)</span>
+                <span id="resFee">0원</span>
+            </div>
+            <div class="result-item">
+                <span>최종 정산 입금액</span>
+                <span id="resSettlement">0원</span>
+            </div>
+            <div class="result-item total">
+                <span>예상 순수익</span>
+                <span id="resProfit">0원</span>
+            </div>
+            <div class="result-item" style="justify-content: flex-end; font-size: 0.85rem; margin-top: 4px;">
+                <span id="resMarginRate" style="font-weight: 600;">수익률: 0%</span>
+            </div>
+        </div>
+
+        <!-- 결과 하단 액션 버튼 (히스토리 저장 & 사진첩 저장) -->
+        <div class="result-actions">
+            <button type="button" class="btn-action btn-primary" id="btnSaveHistory" onclick="openSaveModal()" disabled>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+                    <polyline points="17 21 17 13 7 13 7 21"></polyline>
+                    <polyline points="7 3 7 8 15 8"></polyline>
+                </svg>
+                <span>히스토리에 저장</span>
+            </button>
+            <button type="button" class="btn-action btn-secondary" id="btnSavePhoto" onclick="captureCurrentResult()" disabled title="결과를 영수증 이미지로 만들어 사진첩에 저장하거나 공유합니다">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path>
+                    <circle cx="12" cy="13" r="4"></circle>
+                </svg>
+                <span>사진첩 저장</span>
+            </button>
         </div>
     </div>
 
-    <div class="result-box" id="resultBox">
-        <div class="result-item">
-            <span>크림 수수료 (예상)</span>
-            <span id="resFee">0원</span>
+    <!-- ================= [2. 히스토리 탭] ================= -->
+    <div class="tab-pane" id="tabPaneHistory">
+        <!-- 상단 요약 -->
+        <div class="history-summary">
+            <div>
+                <div class="info-label">저장된 계산</div>
+                <div class="info-val"><span id="histCount">0</span>건</div>
+            </div>
+            <div style="text-align: right;">
+                <div class="info-label">총 누적 순수익</div>
+                <div class="info-val" id="histTotalProfit">0원</div>
+            </div>
         </div>
-        <div class="result-item">
-            <span>최종 정산 입금액</span>
-            <span id="resSettlement">0원</span>
+
+        <!-- 백업 / 파일 저장 툴바 -->
+        <div class="history-tools">
+            <button type="button" class="btn-tool" onclick="exportHistoryJSON()" title="휴대폰 파일 앱 등에 백업 파일로 저장합니다">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+                파일 백업
+            </button>
+            <button type="button" class="btn-tool" onclick="document.getElementById('importFileInput').click()" title="저장해둔 백업 파일을 불러와 복원합니다">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12"/></svg>
+                파일 복원
+            </button>
+            <input type="file" id="importFileInput" accept=".json" style="display: none;" onchange="importHistoryJSON(event)">
+            
+            <button type="button" class="btn-tool" onclick="exportHistoryCSV()" title="엑셀로 열어볼 수 있는 CSV 파일로 저장합니다">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8zM14 2v6h6"/></svg>
+                엑셀(CSV)
+            </button>
+            <button type="button" class="btn-tool danger" onclick="clearAllHistory()" title="저장된 히스토리를 모두 삭제합니다">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                전체삭제
+            </button>
         </div>
-        <div class="result-item total">
-            <span>예상 순수익</span>
-            <span id="resProfit">0원</span>
-        </div>
-        <div class="result-item" style="justify-content: flex-end; font-size: 0.85rem; margin-top: 4px;">
-            <span id="resMarginRate" style="font-weight: 600;">수익률: 0%</span>
+
+        <!-- 히스토리 목록 -->
+        <div class="history-list" id="historyList">
+            <!-- 자바스크립트로 렌더링 -->
         </div>
     </div>
 </div>
+
+<!-- ================= [저장 모달] ================= -->
+<div class="modal-overlay" id="saveModal">
+    <div class="modal">
+        <div class="modal-title">히스토리에 저장</div>
+        <div class="modal-summary-box" id="modalCalcSummary">
+            <!-- 요약 내용 삽입 -->
+        </div>
+        <div class="input-group">
+            <label>제품명 (필수)</label>
+            <input type="text" id="inputProductName" placeholder="예: 조던 1 로우 골프 울프그레이" autofocus>
+        </div>
+        <div class="input-group" style="margin-bottom: 0;">
+            <label>메모 (선택)</label>
+            <input type="text" id="inputProductMemo" placeholder="예: 265 사이즈, 여주아울렛 구매">
+        </div>
+        <div class="modal-buttons">
+            <button type="button" class="btn-secondary" onclick="closeSaveModal()">취소</button>
+            <button type="button" class="btn-primary" onclick="confirmSaveHistory()">저장하기</button>
+        </div>
+    </div>
+</div>
+
+<!-- ================= [수정 모달] ================= -->
+<div class="modal-overlay" id="editModal">
+    <div class="modal">
+        <div class="modal-title">제품 정보 수정</div>
+        <input type="hidden" id="editItemId">
+        <div class="input-group">
+            <label>제품명</label>
+            <input type="text" id="editProductName">
+        </div>
+        <div class="input-group" style="margin-bottom: 0;">
+            <label>메모</label>
+            <input type="text" id="editProductMemo">
+        </div>
+        <div class="modal-buttons">
+            <button type="button" class="btn-secondary" onclick="closeEditModal()">취소</button>
+            <button type="button" class="btn-primary" onclick="confirmEditHistory()">수정 완료</button>
+        </div>
+    </div>
+</div>
+
+<!-- ================= [사진첩 저장용 영수증 카드 템플릿] ================= -->
+<div id="receiptCaptureArea">
+    <div class="receipt-header">
+        <span class="tag">KREAM MARGIN REPORT</span>
+        <h3>리셀 마진 계산서</h3>
+        <p id="receiptDate">2026.10.14 10:00</p>
+    </div>
+    <div class="receipt-product" id="receiptProduct">제품명</div>
+    <table class="receipt-table">
+        <tr>
+            <td style="color:#777;">매장 표시가</td>
+            <td id="receiptTagPrice">0원</td>
+        </tr>
+        <tr>
+            <td style="color:#777;">추가 할인율</td>
+            <td id="receiptDiscountRate">0%</td>
+        </tr>
+        <tr>
+            <td style="color:#222; font-weight:600;">최종 구매가</td>
+            <td id="receiptBuyPrice" style="color:#222;">0원</td>
+        </tr>
+        <tr style="height: 10px;"><td></td><td></td></tr>
+        <tr>
+            <td style="color:#777;">크림 판매 희망가</td>
+            <td id="receiptSellPrice">0원</td>
+        </tr>
+        <tr>
+            <td style="color:#777;">크림 수수료 (<span id="receiptFeeRate">5.0</span>%)</td>
+            <td id="receiptFeeAmount" style="color:#ef6253;">-0원</td>
+        </tr>
+        <tr>
+            <td style="color:#777;">발송 택배비</td>
+            <td id="receiptShippingFee" style="color:#ef6253;">-0원</td>
+        </tr>
+        <tr>
+            <td style="color:#222; font-weight:600;">최종 정산 입금액</td>
+            <td id="receiptSettlement" style="color:#222;">0원</td>
+        </tr>
+    </table>
+    <div class="receipt-total">
+        <div>
+            <span>예상 순수익</span>
+            <div id="receiptMarginRate" style="font-size: 0.8rem; font-weight: 600; color: #777;">수익률: 0%</div>
+        </div>
+        <div class="profit-val" id="receiptProfit">0원</div>
+    </div>
+</div>
+
+<!-- 토스트 메시지 -->
+<div class="toast" id="toastMsg">저장되었습니다</div>
 
 <script>
     const DEFAULT_FEE_RATE = 5.0;      // 크림 일반 판매 기준 기본 수수료율 (5.0%)
@@ -139,8 +660,12 @@
 
     const STORAGE_KEY_FEE = 'kream_fee_rate';
     const STORAGE_KEY_SHIPPING = 'kream_shipping_fee';
+    const STORAGE_KEY_HISTORY = 'kream_calc_history_list';
 
-    // 로컬 스토리지에서 저장된 설정값 불러오기
+    // 현재 계산된 결과 임시 보관 객체
+    let currentCalcData = null;
+
+    // --- 1. 설정 및 계산 관련 ---
     function initSettings() {
         const savedFee = localStorage.getItem(STORAGE_KEY_FEE);
         const savedShipping = localStorage.getItem(STORAGE_KEY_SHIPPING);
@@ -149,50 +674,42 @@
         document.getElementById('shippingFee').value = (savedShipping !== null && savedShipping !== '') ? savedShipping : DEFAULT_SHIPPING_FEE;
     }
 
-    // 수수료율 변경 시 저장 및 계산
     function onFeeRateChange() {
         const val = document.getElementById('feeRate').value;
-        if (val !== '') {
-            localStorage.setItem(STORAGE_KEY_FEE, val);
-        }
+        if (val !== '') localStorage.setItem(STORAGE_KEY_FEE, val);
         calculate();
     }
 
-    // 택배비 변경 시 저장 및 계산
     function onShippingFeeChange() {
         const val = document.getElementById('shippingFee').value;
-        if (val !== '') {
-            localStorage.setItem(STORAGE_KEY_SHIPPING, val);
-        }
+        if (val !== '') localStorage.setItem(STORAGE_KEY_SHIPPING, val);
         calculate();
     }
 
-    // 기본값 복원
     function resetSettings() {
         localStorage.removeItem(STORAGE_KEY_FEE);
         localStorage.removeItem(STORAGE_KEY_SHIPPING);
         document.getElementById('feeRate').value = DEFAULT_FEE_RATE;
         document.getElementById('shippingFee').value = DEFAULT_SHIPPING_FEE;
         calculate();
+        showToast('설정값이 기본값으로 복원되었습니다.');
     }
 
     function calculate() {
-        // 1. 구매가 계산
         const tagPrice = Number(document.getElementById('tagPrice').value) || 0;
         const discountRate = Number(document.getElementById('discountRate').value) || 0;
         
-        // 할인율 적용된 최종 구매가 (원단위 절사)
+        // 최종 구매가 (원단위 절사)
         const buyPrice = Math.floor(tagPrice * (1 - (discountRate / 100)));
         document.getElementById('finalBuyPrice').innerText = buyPrice.toLocaleString() + '원';
 
-        // 2. 판매가 및 기타 부대비용
         const sellPrice = Number(document.getElementById('sellPrice').value) || 0;
         const feeRate = Number(document.getElementById('feeRate').value) || 0;
         const shippingFee = Number(document.getElementById('shippingFee').value) || 0;
 
-        const resultBox = document.getElementById('resultBox');
-        
-        // 입력값이 부족하면 결과창을 숨기거나 0으로 표시
+        const btnSave = document.getElementById('btnSaveHistory');
+        const btnPhoto = document.getElementById('btnSavePhoto');
+
         if (buyPrice === 0 || sellPrice === 0) {
             document.getElementById('resFee').innerText = '0원';
             document.getElementById('resSettlement').innerText = '0원';
@@ -200,36 +717,35 @@
             document.getElementById('resMarginRate').innerText = '수익률: 0%';
             document.getElementById('resProfit').className = 'result-item total';
             document.getElementById('resMarginRate').className = '';
+            
+            btnSave.disabled = true;
+            btnPhoto.disabled = true;
+            currentCalcData = null;
             return;
         }
 
-        // 수수료 계산 (소수점 이하 버림)
+        // 수수료 및 정산액 계산
         const feeAmount = Math.floor(sellPrice * (feeRate / 100));
-        
-        // 정산 금액 = 판매가 - 수수료
         const settlement = sellPrice - feeAmount;
-
-        // 순수익 = 정산 금액 - 구매가 - 택배비
         const netProfit = settlement - buyPrice - shippingFee;
 
-        // 수익률 = (순수익 / 투자금액) * 100
+        // 수익률 = (순수익 / (구매가 + 택배비)) * 100
         const totalInvestment = buyPrice + shippingFee;
         let marginRate = 0;
         if (totalInvestment > 0) {
             marginRate = ((netProfit / totalInvestment) * 100).toFixed(1);
         }
 
-        // 결과 화면 업데이트
+        // 결과 화면 렌더링
         document.getElementById('resFee').innerText = feeAmount.toLocaleString() + '원';
         document.getElementById('resSettlement').innerText = settlement.toLocaleString() + '원';
         
         const elProfit = document.getElementById('resProfit');
-        elProfit.innerText = netProfit.toLocaleString() + '원';
+        elProfit.innerText = (netProfit > 0 ? '+' : '') + netProfit.toLocaleString() + '원';
         
         const elMarginRate = document.getElementById('resMarginRate');
         elMarginRate.innerText = `수익률: ${marginRate}%`;
 
-        // 마이너스/플러스 색상 처리
         elProfit.className = 'result-item total'; 
         elMarginRate.className = '';
         
@@ -240,12 +756,511 @@
             elProfit.classList.add('profit-negative');
             elMarginRate.classList.add('profit-negative');
         }
+
+        // 액션 버튼 활성화
+        btnSave.disabled = false;
+        btnPhoto.disabled = false;
+
+        // 현재 계산 데이터 저장
+        currentCalcData = {
+            tagPrice,
+            discountRate,
+            buyPrice,
+            sellPrice,
+            feeRate,
+            feeAmount,
+            shippingFee,
+            settlement,
+            netProfit,
+            marginRate
+        };
     }
-    
-    // 페이지 로드 시 설정 불러오기 및 계산 실행
+
+    // --- 2. 탭 전환 관련 ---
+    function switchTab(tab) {
+        const btnCalc = document.getElementById('tabBtnCalc');
+        const btnHist = document.getElementById('tabBtnHistory');
+        const paneCalc = document.getElementById('tabPaneCalc');
+        const paneHist = document.getElementById('tabPaneHistory');
+
+        if (tab === 'calc') {
+            btnCalc.classList.add('active');
+            btnHist.classList.remove('active');
+            paneCalc.classList.add('active');
+            paneHist.classList.remove('active');
+        } else {
+            btnHist.classList.add('active');
+            btnCalc.classList.remove('active');
+            paneHist.classList.add('active');
+            paneCalc.classList.remove('active');
+            renderHistory();
+        }
+    }
+
+    // --- 3. 히스토리 로컬 스토리지 관리 ---
+    function getHistoryList() {
+        try {
+            const raw = localStorage.getItem(STORAGE_KEY_HISTORY);
+            return raw ? JSON.parse(raw) : [];
+        } catch (e) {
+            console.error('Failed to parse history', e);
+            return [];
+        }
+    }
+
+    function saveHistoryList(list) {
+        localStorage.setItem(STORAGE_KEY_HISTORY, JSON.stringify(list));
+        updateHistoryBadge();
+    }
+
+    function updateHistoryBadge() {
+        const list = getHistoryList();
+        const badge = document.getElementById('historyBadge');
+        if (list.length > 0) {
+            badge.innerText = list.length;
+            badge.style.display = 'inline-block';
+        } else {
+            badge.style.display = 'none';
+        }
+    }
+
+    // --- 4. 히스토리 저장 모달 ---
+    function openSaveModal() {
+        if (!currentCalcData) return;
+        
+        const summaryHtml = `
+            <div><strong>최종 구매가:</strong> ${currentCalcData.buyPrice.toLocaleString()}원 (${currentCalcData.discountRate}% 할인)</div>
+            <div><strong>크림 판매가:</strong> ${currentCalcData.sellPrice.toLocaleString()}원 (정산: ${currentCalcData.settlement.toLocaleString()}원)</div>
+            <div style="margin-top: 4px; font-weight: 700; color: ${currentCalcData.netProfit >= 0 ? 'var(--positive)' : 'var(--accent)'};">
+                예상 순수익: ${(currentCalcData.netProfit > 0 ? '+' : '') + currentCalcData.netProfit.toLocaleString()}원 (${currentCalcData.marginRate}%)
+            </div>
+        `;
+        document.getElementById('modalCalcSummary').innerHTML = summaryHtml;
+        document.getElementById('inputProductName').value = '';
+        document.getElementById('inputProductMemo').value = '';
+        
+        const modal = document.getElementById('saveModal');
+        modal.classList.add('active');
+        setTimeout(() => document.getElementById('inputProductName').focus(), 100);
+    }
+
+    function closeSaveModal() {
+        document.getElementById('saveModal').classList.remove('active');
+    }
+
+    function confirmSaveHistory() {
+        const nameInput = document.getElementById('inputProductName');
+        const productName = nameInput.value.trim();
+        if (!productName) {
+            alert('제품명을 입력해 주세요.');
+            nameInput.focus();
+            return;
+        }
+
+        const memo = document.getElementById('inputProductMemo').value.trim();
+        const now = new Date();
+        const dateStr = `${now.getFullYear()}.${String(now.getMonth()+1).padStart(2,'0')}.${String(now.getDate()).padStart(2,'0')} ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+
+        const newItem = {
+            id: Date.now(),
+            name: productName,
+            memo: memo,
+            date: dateStr,
+            ...currentCalcData
+        };
+
+        const list = getHistoryList();
+        list.unshift(newItem); // 최신순 추가
+        saveHistoryList(list);
+
+        closeSaveModal();
+        showToast('히스토리에 저장되었습니다.');
+    }
+
+    // --- 5. 히스토리 목록 렌더링 & 관리 ---
+    function renderHistory() {
+        const list = getHistoryList();
+        const container = document.getElementById('historyList');
+        const countEl = document.getElementById('histCount');
+        const totalProfitEl = document.getElementById('histTotalProfit');
+
+        countEl.innerText = list.length;
+
+        if (list.length === 0) {
+            totalProfitEl.innerText = '0원';
+            totalProfitEl.className = 'info-val';
+            container.innerHTML = `
+                <div class="history-empty">
+                    <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#ccc" stroke-width="1.5" style="margin-bottom:8px;">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                        <polyline points="14 2 14 8 20 8"></polyline>
+                        <line x1="16" y1="13" x2="8" y2="13"></line>
+                        <line x1="16" y1="17" x2="8" y2="17"></line>
+                    </svg>
+                    <div>저장된 계산 히스토리가 없습니다.</div>
+                    <div style="font-size:0.8rem; margin-top:4px;">계산기 탭에서 결과를 저장해 보세요.</div>
+                </div>
+            `;
+            return;
+        }
+
+        let totalProfit = 0;
+        let html = '';
+
+        list.forEach(item => {
+            totalProfit += (item.netProfit || 0);
+            const isProfit = item.netProfit >= 0;
+            const profitClass = isProfit ? 'profit-positive' : 'profit-negative';
+            const profitSign = item.netProfit > 0 ? '+' : '';
+
+            html += `
+                <div class="history-card" data-id="${item.id}">
+                    <div class="card-header">
+                        <div>
+                            <div class="card-title">${escapeHtml(item.name)}</div>
+                            <div class="card-date">${item.date}</div>
+                        </div>
+                        <div class="card-tools">
+                            <button type="button" class="btn-icon" onclick="openEditModal(${item.id})" title="제품명/메모 수정">
+                                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>
+                            </button>
+                            <button type="button" class="btn-icon del" onclick="deleteHistoryItem(${item.id})" title="삭제">
+                                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                            </button>
+                        </div>
+                    </div>
+
+                    ${item.memo ? `<div class="card-memo">${escapeHtml(item.memo)}</div>` : ''}
+
+                    <div class="card-body">
+                        <div class="item"><span>매장 표시가</span><span>${item.tagPrice ? item.tagPrice.toLocaleString() + '원' : '-'}</span></div>
+                        <div class="item"><span>추가 할인</span><span>${item.discountRate}%</span></div>
+                        <div class="item"><span>최종 구매가</span><span>${item.buyPrice.toLocaleString()}원</span></div>
+                        <div class="item"><span>크림 판매가</span><span>${item.sellPrice.toLocaleString()}원</span></div>
+                        <div class="item"><span>수수료 (${item.feeRate}%)</span><span>${item.feeAmount ? item.feeAmount.toLocaleString() + '원' : '-'}</span></div>
+                        <div class="item"><span>정산 입금액</span><span>${item.settlement.toLocaleString()}원</span></div>
+                    </div>
+
+                    <div class="card-footer">
+                        <div>
+                            <span class="card-profit ${profitClass}">${profitSign}${item.netProfit.toLocaleString()}원</span>
+                            <span class="card-margin ${profitClass}">(${item.marginRate}%)</span>
+                        </div>
+                        <div class="card-actions">
+                            <button type="button" class="btn-card-action" onclick="captureHistoryItem(${item.id})" title="사진첩 저장용 이미지 생성">
+                                📸 영수증
+                            </button>
+                            <button type="button" class="btn-card-action" onclick="loadToCalculator(${item.id})" title="이 수치들을 계산기로 불러옵니다">
+                                🧮 불러오기
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+        });
+
+        container.innerHTML = html;
+        totalProfitEl.innerText = (totalProfit > 0 ? '+' : '') + totalProfit.toLocaleString() + '원';
+        totalProfitEl.className = 'info-val ' + (totalProfit >= 0 ? 'profit-positive' : 'profit-negative');
+    }
+
+    function escapeHtml(str) {
+        if (!str) return '';
+        return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+
+    // 히스토리 개별 삭제
+    function deleteHistoryItem(id) {
+        if (!confirm('이 히스토리 항목을 삭제하시겠습니까?')) return;
+        let list = getHistoryList();
+        list = list.filter(item => item.id !== id);
+        saveHistoryList(list);
+        renderHistory();
+        showToast('삭제되었습니다.');
+    }
+
+    // 히스토리 전체 삭제
+    function clearAllHistory() {
+        const list = getHistoryList();
+        if (list.length === 0) return;
+        if (!confirm(`저장된 전체 히스토리 ${list.length}건을 모두 삭제하시겠습니까?\n삭제 후에는 복원할 수 없습니다.`)) return;
+        saveHistoryList([]);
+        renderHistory();
+        showToast('전체 히스토리가 삭제되었습니다.');
+    }
+
+    // 계산기로 불러오기
+    function loadToCalculator(id) {
+        const list = getHistoryList();
+        const item = list.find(i => i.id === id);
+        if (!item) return;
+
+        document.getElementById('tagPrice').value = item.tagPrice;
+        document.getElementById('discountRate').value = item.discountRate;
+        document.getElementById('sellPrice').value = item.sellPrice;
+        document.getElementById('feeRate').value = item.feeRate;
+        document.getElementById('shippingFee').value = item.shippingFee;
+
+        // 계산기 탭으로 전환 및 계산 실행
+        switchTab('calc');
+        calculate();
+        showToast(`'${item.name}' 데이터를 계산기로 불러왔습니다.`);
+    }
+
+    // --- 6. 히스토리 수정 모달 ---
+    function openEditModal(id) {
+        const list = getHistoryList();
+        const item = list.find(i => i.id === id);
+        if (!item) return;
+
+        document.getElementById('editItemId').value = item.id;
+        document.getElementById('editProductName').value = item.name;
+        document.getElementById('editProductMemo').value = item.memo || '';
+        document.getElementById('editModal').classList.add('active');
+    }
+
+    function closeEditModal() {
+        document.getElementById('editModal').classList.remove('active');
+    }
+
+    function confirmEditHistory() {
+        const id = Number(document.getElementById('editItemId').value);
+        const newName = document.getElementById('editProductName').value.trim();
+        if (!newName) {
+            alert('제품명을 입력해 주세요.');
+            return;
+        }
+        const newMemo = document.getElementById('editProductMemo').value.trim();
+
+        const list = getHistoryList();
+        const idx = list.findIndex(i => i.id === id);
+        if (idx !== -1) {
+            list[idx].name = newName;
+            list[idx].memo = newMemo;
+            saveHistoryList(list);
+            renderHistory();
+            closeEditModal();
+            showToast('수정되었습니다.');
+        }
+    }
+
+    // --- 7. 파일 백업 / 복원 (JSON & CSV) ---
+    // JSON 내보내기 (스마트폰 파일 앱 저장)
+    function exportHistoryJSON() {
+        const list = getHistoryList();
+        if (list.length === 0) {
+            alert('백업할 히스토리 데이터가 없습니다.');
+            return;
+        }
+
+        const dataStr = JSON.stringify(list, null, 2);
+        const blob = new Blob([dataStr], { type: 'application/json' });
+        const now = new Date();
+        const filename = `kream_calc_backup_${now.getFullYear()}${String(now.getMonth()+1).padStart(2,'0')}${String(now.getDate()).padStart(2,'0')}.json`;
+
+        downloadBlobFile(blob, filename);
+        showToast('백업 파일이 저장되었습니다.');
+    }
+
+    // JSON 불러오기 (복원)
+    function importHistoryJSON(e) {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = function(evt) {
+            try {
+                const imported = JSON.parse(evt.target.result);
+                if (!Array.isArray(imported)) {
+                    throw new Error('유효한 백업 파일 형식이 아닙니다.');
+                }
+
+                const existing = getHistoryList();
+                const choice = confirm(`가져올 데이터: ${imported.length}건\n\n[확인] 기존 히스토리에 합치기 (중복 제외)\n[취소] 기존 히스토리를 모두 지우고 이 파일 내용으로 교체`);
+                
+                let merged;
+                if (choice) {
+                    // 합치기
+                    const existingIds = new Set(existing.map(i => i.id));
+                    const newItems = imported.filter(i => !existingIds.has(i.id));
+                    merged = [...newItems, ...existing];
+                } else {
+                    // 덮어쓰기
+                    merged = imported;
+                }
+
+                saveHistoryList(merged);
+                renderHistory();
+                showToast(`총 ${merged.length}건의 히스토리가 복원되었습니다.`);
+            } catch (err) {
+                alert('파일 복원 중 오류가 발생했습니다: ' + err.message);
+            }
+            // input 초기화
+            e.target.value = '';
+        };
+        reader.readAsText(file);
+    }
+
+    // 엑셀용 CSV 내보내기
+    function exportHistoryCSV() {
+        const list = getHistoryList();
+        if (list.length === 0) {
+            alert('내보낼 히스토리 데이터가 없습니다.');
+            return;
+        }
+
+        // BOM (\uFEFF) 추가하여 엑셀에서 한글 깨짐 방지
+        let csv = '\uFEFF';
+        csv += '제품명,메모,저장일시,매장표시가,할인율(%),최종구매가,크림판매가,수수료율(%),수수료,택배비,정산입금액,예상순수익,수익률(%)\n';
+
+        list.forEach(i => {
+            const row = [
+                `"${(i.name || '').replace(/"/g, '""')}"`,
+                `"${(i.memo || '').replace(/"/g, '""')}"`,
+                `"${i.date || ''}"`,
+                i.tagPrice || 0,
+                i.discountRate || 0,
+                i.buyPrice || 0,
+                i.sellPrice || 0,
+                i.feeRate || 0,
+                i.feeAmount || 0,
+                i.shippingFee || 0,
+                i.settlement || 0,
+                i.netProfit || 0,
+                `"${i.marginRate || 0}"`
+            ];
+            csv += row.join(',') + '\n';
+        });
+
+        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+        const now = new Date();
+        const filename = `kream_calc_${now.getFullYear()}${String(now.getMonth()+1).padStart(2,'0')}${String(now.getDate()).padStart(2,'0')}.csv`;
+        downloadBlobFile(blob, filename);
+        showToast('CSV 파일이 다운로드되었습니다.');
+    }
+
+    function downloadBlobFile(blob, filename) {
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    }
+
+    // --- 8. 사진첩 저장 기능 (Web Share API & 이미지 캡처) ---
+    // 현재 계산기 화면 영수증 캡처
+    function captureCurrentResult() {
+        if (!currentCalcData) return;
+        
+        const productName = prompt('영수증 이미지에 표시할 제품명을 입력해 주세요 (생략 가능):', '') || '계산 결과';
+        
+        const now = new Date();
+        const dateStr = `${now.getFullYear()}.${String(now.getMonth()+1).padStart(2,'0')}.${String(now.getDate()).padStart(2,'0')} ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+
+        fillReceiptTemplate({
+            name: productName,
+            date: dateStr,
+            ...currentCalcData
+        });
+
+        generateAndSaveReceiptImage(productName);
+    }
+
+    // 히스토리 항목 영수증 캡처
+    function captureHistoryItem(id) {
+        const list = getHistoryList();
+        const item = list.find(i => i.id === id);
+        if (!item) return;
+
+        fillReceiptTemplate(item);
+        generateAndSaveReceiptImage(item.name);
+    }
+
+    function fillReceiptTemplate(data) {
+        document.getElementById('receiptDate').innerText = data.date || '';
+        document.getElementById('receiptProduct').innerText = data.name || 'KREAM 상품';
+        document.getElementById('receiptTagPrice').innerText = (data.tagPrice ? data.tagPrice.toLocaleString() : '0') + '원';
+        document.getElementById('receiptDiscountRate').innerText = (data.discountRate || 0) + '%';
+        document.getElementById('receiptBuyPrice').innerText = (data.buyPrice ? data.buyPrice.toLocaleString() : '0') + '원';
+        document.getElementById('receiptSellPrice').innerText = (data.sellPrice ? data.sellPrice.toLocaleString() : '0') + '원';
+        document.getElementById('receiptFeeRate').innerText = data.feeRate || '5.0';
+        document.getElementById('receiptFeeAmount').innerText = '-' + (data.feeAmount ? data.feeAmount.toLocaleString() : '0') + '원';
+        document.getElementById('receiptShippingFee').innerText = '-' + (data.shippingFee ? data.shippingFee.toLocaleString() : '0') + '원';
+        document.getElementById('receiptSettlement').innerText = (data.settlement ? data.settlement.toLocaleString() : '0') + '원';
+        
+        const profitEl = document.getElementById('receiptProfit');
+        const isProfit = (data.netProfit || 0) >= 0;
+        profitEl.innerText = (data.netProfit > 0 ? '+' : '') + (data.netProfit ? data.netProfit.toLocaleString() : '0') + '원';
+        profitEl.style.color = isProfit ? 'var(--positive)' : 'var(--accent)';
+
+        document.getElementById('receiptMarginRate').innerText = `수익률: ${data.marginRate || 0}%`;
+    }
+
+    function generateAndSaveReceiptImage(titleName) {
+        showToast('영수증 이미지 생성 중...');
+        const target = document.getElementById('receiptCaptureArea');
+
+        html2canvas(target, {
+            scale: 2, // 고해상도 (레티나 디스플레이 대응)
+            backgroundColor: '#ffffff',
+            useCORS: true
+        }).then(canvas => {
+            canvas.toBlob(async blob => {
+                if (!blob) {
+                    alert('이미지 생성에 실패했습니다.');
+                    return;
+                }
+
+                const filename = `kream_${Date.now()}.png`;
+                const file = new File([blob], filename, { type: 'image/png' });
+
+                // iOS/Android 등 모바일 Web Share API 지원 시 (사진첩 저장 / 공유)
+                if (navigator.canShare && navigator.canShare({ files: [file] })) {
+                    try {
+                        await navigator.share({
+                            files: [file],
+                            title: 'KREAM 마진 리포트',
+                            text: `[${titleName}] KREAM 마진 계산 결과 영수증입니다.`
+                        });
+                        showToast('공유/사진첩 저장이 완료되었습니다.');
+                    } catch (err) {
+                        // 사용자가 창을 닫았거나 취소한 경우
+                        if (err.name !== 'AbortError') {
+                            downloadBlobFile(blob, filename);
+                        }
+                    }
+                } else {
+                    // 데스크톱 또는 미지원 브라우저는 이미지 파일 다운로드
+                    downloadBlobFile(blob, filename);
+                    showToast('영수증 이미지가 다운로드되었습니다.');
+                }
+            }, 'image/png');
+        }).catch(err => {
+            console.error(err);
+            alert('영수증 이미지 캡처 중 오류가 발생했습니다.');
+        });
+    }
+
+    // 토스트 메시지 함수
+    let toastTimer = null;
+    function showToast(msg) {
+        const toast = document.getElementById('toastMsg');
+        toast.innerText = msg;
+        toast.classList.add('show');
+        if (toastTimer) clearTimeout(toastTimer);
+        toastTimer = setTimeout(() => {
+            toast.classList.remove('show');
+        }, 2200);
+    }
+
+    // 초기 실행
     window.onload = function() {
         initSettings();
         calculate();
+        updateHistoryBadge();
     };
 </script>
 
